@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import joblib
 import pandas as pd
@@ -10,25 +10,26 @@ import uvicorn
 
 MODEL_PATH = Path("modelos_salvos/modelo_sepse_sem_tempo_admin.pkl")
 FEATURES_PATH = Path("data/processed/features_modelo_sem_tempo_admin.csv")
+MEDIANAS_PATH = Path("data/processed/medianas_treino_sem_tempo_admin.csv")
 DEFAULT_THRESHOLD = 0.12
 
 app = FastAPI(
     title="API de Detecção de Sepse",
-    description="API para inferência de risco de sepse a partir de um modelo treinado.",
-    version="1.1.0",
+    description="API para inferência de risco de sepse.",
+    version="1.3.0",
 )
 
 
 class PredictRequest(BaseModel):
     features: Dict[str, Any] = Field(
         ...,
-        description="Dicionário com as features de entrada do paciente."
+        description="Dicionário com as features de entrada do paciente.",
     )
     threshold: float = Field(
         DEFAULT_THRESHOLD,
         ge=0.0,
         le=1.0,
-        description="Threshold de decisão para classificar sepse."
+        description="Threshold de decisão para classificar sepse.",
     )
 
 
@@ -50,106 +51,142 @@ def carregar_artefato():
         return None
 
 
-def carregar_features() -> Optional[List[str]]:
-    if not FEATURES_PATH.exists():
-        return None
-
-    try:
-        df = pd.read_csv(FEATURES_PATH)
-        if "feature" in df.columns:
-            return df["feature"].dropna().astype(str).tolist()
-        return None
-    except Exception as exc:
-        print(f"Erro ao carregar features: {exc}")
-        return None
-
-
 def extrair_modelo(artefato):
-    """
-    Tenta encontrar o modelo real dentro do artefato salvo.
-    """
     if artefato is None:
         return None
 
-    # Caso já seja o próprio modelo
+    # Caso o artefato já seja o próprio modelo
     if hasattr(artefato, "predict_proba") or hasattr(artefato, "predict"):
         return artefato
 
-    # Caso seja dicionário
+    # Caso seja um dicionário com o modelo dentro
     if isinstance(artefato, dict):
-        chaves_possiveis = [
+        for chave in [
             "model",
             "modelo",
-            "estimator",
-            "classifier",
             "clf",
+            "classifier",
             "pipeline",
             "best_model",
-            "best_estimator",
-            "modelo_final",
             "melhor_modelo",
-        ]
-        for chave in chaves_possiveis:
+            "modelo_final",
+        ]:
             if chave in artefato:
                 candidato = artefato[chave]
                 if hasattr(candidato, "predict_proba") or hasattr(candidato, "predict"):
                     return candidato
 
-    # Caso seja lista/tupla
-    if isinstance(artefato, (list, tuple)):
-        for item in artefato:
-            if hasattr(item, "predict_proba") or hasattr(item, "predict"):
-                return item
-
     return None
 
 
-def preparar_entrada(features_recebidas: Dict[str, Any], features_esperadas: Optional[List[str]]) -> pd.DataFrame:
+def carregar_features_esperadas(modelo) -> List[str]:
     """
-    Monta o DataFrame de entrada e alinha com as features esperadas pelo modelo.
+    Carrega as features esperadas priorizando exatamente as feature_names
+    internas do modelo XGBoost.
+    """
+    # 1) Tenta pegar do booster do XGBoost
+    try:
+        if modelo is not None and hasattr(modelo, "get_booster"):
+            booster = modelo.get_booster()
+            if booster is not None and booster.feature_names:
+                return [str(col) for col in booster.feature_names]
+    except Exception as exc:
+        print(f"Não consegui ler feature_names do booster: {exc}")
+
+    # 2) Tenta feature_names_in_
+    try:
+        if modelo is not None and hasattr(modelo, "feature_names_in_"):
+            return [str(col) for col in modelo.feature_names_in_]
+    except Exception as exc:
+        print(f"Não consegui ler feature_names_in_: {exc}")
+
+    # 3) Fallback para o CSV
+    if FEATURES_PATH.exists():
+        try:
+            df = pd.read_csv(FEATURES_PATH)
+
+            if "feature" in df.columns:
+                return df["feature"].dropna().astype(str).tolist()
+
+            return df.iloc[:, 0].dropna().astype(str).tolist()
+        except Exception as exc:
+            print(f"Erro ao carregar features do CSV: {exc}")
+
+    return []
+
+
+def carregar_medianas() -> Dict[str, float]:
+    if not MEDIANAS_PATH.exists():
+        return {}
+
+    try:
+        df = pd.read_csv(MEDIANAS_PATH)
+
+        if {"coluna", "mediana"}.issubset(df.columns):
+            return dict(zip(df["coluna"].astype(str), df["mediana"]))
+
+        if {"feature", "mediana"}.issubset(df.columns):
+            return dict(zip(df["feature"].astype(str), df["mediana"]))
+
+        if df.shape[1] >= 2:
+            return dict(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1]))
+
+    except Exception as exc:
+        print(f"Erro ao carregar medianas: {exc}")
+
+    return {}
+
+
+def preparar_entrada(
+    features_recebidas: Dict[str, Any],
+    features_esperadas: List[str],
+    medianas: Dict[str, float],
+) -> pd.DataFrame:
+    """
+    Monta a entrada final no formato exato esperado pelo modelo.
     """
     entrada = pd.DataFrame([features_recebidas])
 
-    if features_esperadas:
-        for col in features_esperadas:
-            if col not in entrada.columns:
-                entrada[col] = 0
+    # Garante colunas faltantes
+    for col in features_esperadas:
+        if col not in entrada.columns:
+            entrada[col] = medianas.get(col, 0)
 
-        entrada = entrada[features_esperadas]
+    # Mantém apenas as colunas esperadas, na ordem correta
+    entrada = entrada.reindex(columns=features_esperadas)
+
+    # Força valores numéricos e preenche faltantes
+    entrada = entrada.apply(pd.to_numeric, errors="coerce").fillna(0)
+
+    # Garante nomes de colunas como string
+    entrada.columns = entrada.columns.astype(str)
 
     return entrada
 
 
 def prever_probabilidade(modelo, entrada: pd.DataFrame) -> float:
-    """
-    Tenta obter a probabilidade da classe positiva.
-    """
     if hasattr(modelo, "predict_proba"):
         proba = modelo.predict_proba(entrada)
-        if len(proba.shape) == 2 and proba.shape[1] > 1:
-            return float(proba[0, 1])
-        return float(proba[0])
+        return float(proba[0, 1])
 
     if hasattr(modelo, "predict"):
         pred = modelo.predict(entrada)
-
-        # Sem probabilidade calibrada: retorna 0.0 ou 1.0 com base na predição
-        # Isso não é uma probabilidade real, mas evita quebrar a API.
         return float(pred[0])
 
-    raise ValueError("O modelo não possui nem predict_proba() nem predict().")
+    raise ValueError("Modelo sem predict_proba() e sem predict().")
 
 
 artefato = carregar_artefato()
 modelo = extrair_modelo(artefato)
-features_esperadas = carregar_features()
+features_esperadas = carregar_features_esperadas(modelo)
+medianas = carregar_medianas()
 
 
 @app.get("/")
 def root():
     return {
         "mensagem": "API de detecção de sepse ativa.",
-        "docs": "/docs"
+        "docs": "/docs",
     }
 
 
@@ -161,8 +198,9 @@ def health():
         "modelo_extraido": modelo is not None,
         "tipo_artefato": str(type(artefato)) if artefato is not None else None,
         "tipo_modelo": str(type(modelo)) if modelo is not None else None,
+        "features_carregadas": len(features_esperadas),
+        "medianas_carregadas": len(medianas),
         "caminho_modelo": str(MODEL_PATH),
-        "features_carregadas": len(features_esperadas) if features_esperadas else 0
     }
 
 
@@ -170,40 +208,41 @@ def health():
 def metadata():
     return {
         "nome_projeto": "Detecção de Sepse com Machine Learning",
-        "versao_api": "1.1.0",
+        "versao_api": "1.3.0",
         "threshold_padrao": DEFAULT_THRESHOLD,
         "modelo_extraido": modelo is not None,
-        "features_carregadas": len(features_esperadas) if features_esperadas else 0
+        "features_carregadas": len(features_esperadas),
+        "medianas_carregadas": len(medianas),
     }
 
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(payload: PredictRequest):
-    if artefato is None:
+    if modelo is None:
         raise HTTPException(
             status_code=500,
-            detail=f"Artefato não carregado em '{MODEL_PATH}'."
+            detail="Modelo não extraído do artefato.",
         )
 
-    if modelo is None:
-        tipo = str(type(artefato))
-        detalhe_extra = ""
-
-        if isinstance(artefato, dict):
-            detalhe_extra = f" Chaves encontradas: {list(artefato.keys())}"
-
+    if not features_esperadas:
         raise HTTPException(
             status_code=500,
-            detail=(
-                f"Não foi possível extrair um modelo utilizável do artefato. "
-                f"Tipo do artefato: {tipo}.{detalhe_extra}"
-            ),
+            detail="Lista de features não carregada.",
         )
 
     try:
-        entrada = preparar_entrada(payload.features, features_esperadas)
-        probabilidade = prever_probabilidade(modelo, entrada)
+        entrada = preparar_entrada(
+            payload.features,
+            features_esperadas,
+            medianas,
+        )
 
+        # Prints de diagnóstico para o terminal
+        print("Features esperadas:", len(features_esperadas))
+        print("Colunas da entrada:", len(entrada.columns))
+        print("Primeiras 20 colunas da entrada:", entrada.columns[:20].tolist())
+
+        probabilidade = prever_probabilidade(modelo, entrada)
         predicao = int(probabilidade >= payload.threshold)
         classe = "sepse" if predicao == 1 else "sem sepse"
 
@@ -214,12 +253,10 @@ def predict(payload: PredictRequest):
             classe_predita=classe,
         )
 
-    except HTTPException:
-        raise
     except Exception as exc:
         raise HTTPException(
             status_code=400,
-            detail=f"Erro ao processar a predição: {str(exc)}"
+            detail=f"Erro ao processar a predição: {exc}",
         ) from exc
 
 
