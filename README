@@ -1,0 +1,38 @@
+# Detecção de Sepse com Machine Learning
+
+Projeto de Machine Learning para apoio à **triagem de risco de sepse** com base em dados clínicos, sinais vitais, exames laboratoriais e variáveis temporais derivadas.
+
+## Objetivo
+
+Desenvolver um modelo capaz de identificar pacientes com maior probabilidade de sepse, priorizando **alta sensibilidade**, com análise detalhada de métricas, falsos positivos, falsos negativos e interpretabilidade clínica.
+
+## Estrutura do projeto
+
+```text
+.
+│   Dockerfile
+│   License
+│   MODEL_CARD.md
+│   README.md
+│   __main__.py
+│
+├───data
+│   └───processed
+│           features_modelo_com_tempo_admin.csv
+│           features_modelo_sem_tempo_admin.csv
+│           medianas_treino_com_tempo_admin.csv
+│           medianas_treino_sem_tempo_admin.csv
+│           test_melhor.parquet
+│           train_melhor.parquet
+│           val_melhor.parquet
+│
+├───modelos_salvos
+│       modelo_sepse_sem_tempo_admin.pkl
+│
+└───notebook
+    │   analise_sepse_2.0.ipynb
+    │
+    └───catboost_info
+        │   catboost_training.json
+        │   learn_error.tsv
+        │   time_left.tsv
