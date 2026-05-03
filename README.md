@@ -96,3 +96,10 @@ Essa abordagem permite comparar um cenário mais sensível com outro mais restri
         │   catboost_training.json
         │   learn_error.tsv
         │   time_left.tsv
+
+## Grupo 
+
+Matheus Brito da Silva rm373928
+Ricardo Pinto rm374174
+Felipe Monay rm366815
+Ari Monteiro rm371705
