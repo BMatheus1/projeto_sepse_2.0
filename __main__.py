@@ -375,6 +375,5 @@ def predict(payload: PredictRequest):
             detail=f"Erro ao processar a predição: {exc}",
         ) from exc
 
-
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
