@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+import logging
 
 import joblib
 import pandas as pd
@@ -7,17 +8,31 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import uvicorn
 
+# ============================================================
+# CONFIGURAÇÃO BASE
+# ============================================================
 
-MODEL_PATH = Path("modelos_salvos/modelo_sepse_sem_tempo_admin.pkl")
-FEATURES_PATH = Path("data/processed/features_modelo_sem_tempo_admin.csv")
-MEDIANAS_PATH = Path("data/processed/medianas_treino_sem_tempo_admin.csv")
+ROOT = Path(__file__).resolve().parent
+
+MODEL_PATH = ROOT / "modelos_salvos" / "modelo_sepse_sem_tempo_admin.pkl"
+FEATURES_PATH = ROOT / "data" / "processed" / "features_modelo_sem_tempo_admin.csv"
+MEDIANAS_PATH = ROOT / "data" / "processed" / "medianas_treino_sem_tempo_admin.csv"
+
 DEFAULT_THRESHOLD = 0.12
+API_VERSION = "1.4.0"
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api_sepse")
 
 app = FastAPI(
     title="API de Detecção de Sepse",
     description="API para inferência de risco de sepse.",
-    version="1.3.0",
+    version=API_VERSION,
 )
+
+# ============================================================
+# MODELOS DE ENTRADA E SAÍDA
+# ============================================================
 
 
 class PredictRequest(BaseModel):
@@ -25,11 +40,11 @@ class PredictRequest(BaseModel):
         ...,
         description="Dicionário com as features de entrada do paciente.",
     )
-    threshold: float = Field(
-        DEFAULT_THRESHOLD,
+    threshold: Optional[float] = Field(
+        None,
         ge=0.0,
         le=1.0,
-        description="Threshold de decisão para classificar sepse.",
+        description="Threshold opcional. Se não for enviado, a API usa o threshold salvo no artefato ou o padrão.",
     )
 
 
@@ -40,30 +55,36 @@ class PredictResponse(BaseModel):
     classe_predita: str
 
 
-def carregar_artefato():
+# ============================================================
+# FUNÇÕES DE CARREGAMENTO
+# ============================================================
+
+
+def carregar_artefato() -> Any:
     if not MODEL_PATH.exists():
+        logger.warning("Artefato não encontrado em: %s", MODEL_PATH)
         return None
 
     try:
-        return joblib.load(MODEL_PATH)
+        artefato = joblib.load(MODEL_PATH)
+        logger.info("Artefato carregado com sucesso: %s", MODEL_PATH)
+        return artefato
     except Exception as exc:
-        print(f"Erro ao carregar artefato: {exc}")
+        logger.exception("Erro ao carregar artefato: %s", exc)
         return None
 
 
-def extrair_modelo(artefato):
+def extrair_modelo(artefato: Any) -> Any:
     if artefato is None:
         return None
 
-    # Caso o artefato já seja o próprio modelo
     if hasattr(artefato, "predict_proba") or hasattr(artefato, "predict"):
         return artefato
 
-    # Caso seja um dicionário com o modelo dentro
     if isinstance(artefato, dict):
         for chave in [
-            "model",
             "modelo",
+            "model",
             "clf",
             "classifier",
             "pipeline",
@@ -79,43 +100,81 @@ def extrair_modelo(artefato):
     return None
 
 
-def carregar_features_esperadas(modelo) -> List[str]:
+def extrair_threshold_padrao(artefato: Any) -> float:
+    if isinstance(artefato, dict):
+        for chave in ["threshold_validacao_modelo", "threshold_base"]:
+            valor = artefato.get(chave)
+            if valor is not None:
+                try:
+                    return float(valor)
+                except Exception:
+                    pass
+    return DEFAULT_THRESHOLD
+
+
+def extrair_features_do_artefato(artefato: Any) -> List[str]:
+    if isinstance(artefato, dict):
+        features = artefato.get("features")
+        if isinstance(features, list) and features:
+            return [str(col) for col in features]
+    return []
+
+
+def carregar_features_esperadas(modelo: Any, artefato: Any) -> List[str]:
     """
-    Carrega as features esperadas priorizando exatamente as feature_names
-    internas do modelo XGBoost.
+    Prioridade:
+    1) features salvas no artefato
+    2) booster do XGBoost
+    3) feature_names_in_
+    4) CSV de features
     """
-    # 1) Tenta pegar do booster do XGBoost
+    features_artefato = extrair_features_do_artefato(artefato)
+    if features_artefato:
+        logger.info("Features carregadas do artefato salvo.")
+        return features_artefato
+
     try:
         if modelo is not None and hasattr(modelo, "get_booster"):
             booster = modelo.get_booster()
             if booster is not None and booster.feature_names:
+                logger.info("Features carregadas do booster do modelo.")
                 return [str(col) for col in booster.feature_names]
     except Exception as exc:
-        print(f"Não consegui ler feature_names do booster: {exc}")
+        logger.warning("Não consegui ler feature_names do booster: %s", exc)
 
-    # 2) Tenta feature_names_in_
     try:
         if modelo is not None and hasattr(modelo, "feature_names_in_"):
+            logger.info("Features carregadas de feature_names_in_.")
             return [str(col) for col in modelo.feature_names_in_]
     except Exception as exc:
-        print(f"Não consegui ler feature_names_in_: {exc}")
+        logger.warning("Não consegui ler feature_names_in_: %s", exc)
 
-    # 3) Fallback para o CSV
     if FEATURES_PATH.exists():
         try:
             df = pd.read_csv(FEATURES_PATH)
 
             if "feature" in df.columns:
+                logger.info("Features carregadas do CSV com coluna 'feature'.")
                 return df["feature"].dropna().astype(str).tolist()
 
+            logger.info("Features carregadas da primeira coluna do CSV.")
             return df.iloc[:, 0].dropna().astype(str).tolist()
         except Exception as exc:
-            print(f"Erro ao carregar features do CSV: {exc}")
+            logger.warning("Erro ao carregar features do CSV: %s", exc)
 
     return []
 
 
-def carregar_medianas() -> Dict[str, float]:
+def carregar_medianas(artefato: Any) -> Dict[str, float]:
+    if isinstance(artefato, dict):
+        medianas_artefato = artefato.get("medianas_treino")
+        if isinstance(medianas_artefato, dict) and medianas_artefato:
+            try:
+                logger.info("Medianas carregadas do artefato salvo.")
+                return {str(k): float(v) for k, v in medianas_artefato.items()}
+            except Exception as exc:
+                logger.warning("Erro ao converter medianas do artefato: %s", exc)
+
     if not MEDIANAS_PATH.exists():
         return {}
 
@@ -123,18 +182,26 @@ def carregar_medianas() -> Dict[str, float]:
         df = pd.read_csv(MEDIANAS_PATH)
 
         if {"coluna", "mediana"}.issubset(df.columns):
-            return dict(zip(df["coluna"].astype(str), df["mediana"]))
+            logger.info("Medianas carregadas do CSV com colunas 'coluna' e 'mediana'.")
+            return dict(zip(df["coluna"].astype(str), df["mediana"].astype(float)))
 
         if {"feature", "mediana"}.issubset(df.columns):
-            return dict(zip(df["feature"].astype(str), df["mediana"]))
+            logger.info("Medianas carregadas do CSV com colunas 'feature' e 'mediana'.")
+            return dict(zip(df["feature"].astype(str), df["mediana"].astype(float)))
 
         if df.shape[1] >= 2:
-            return dict(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1]))
+            logger.info("Medianas carregadas das duas primeiras colunas do CSV.")
+            return dict(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1].astype(float)))
 
     except Exception as exc:
-        print(f"Erro ao carregar medianas: {exc}")
+        logger.warning("Erro ao carregar medianas: %s", exc)
 
     return {}
+
+
+# ============================================================
+# PREPARAÇÃO DA ENTRADA
+# ============================================================
 
 
 def preparar_entrada(
@@ -143,28 +210,27 @@ def preparar_entrada(
     medianas: Dict[str, float],
 ) -> pd.DataFrame:
     """
-    Monta a entrada final no formato exato esperado pelo modelo.
+    Monta a entrada no formato exato esperado pelo modelo.
     """
     entrada = pd.DataFrame([features_recebidas])
 
-    # Garante colunas faltantes
     for col in features_esperadas:
         if col not in entrada.columns:
             entrada[col] = medianas.get(col, 0)
 
-    # Mantém apenas as colunas esperadas, na ordem correta
     entrada = entrada.reindex(columns=features_esperadas)
-
-    # Força valores numéricos e preenche faltantes
-    entrada = entrada.apply(pd.to_numeric, errors="coerce").fillna(0)
-
-    # Garante nomes de colunas como string
     entrada.columns = entrada.columns.astype(str)
+
+    for col in entrada.columns:
+        entrada[col] = pd.to_numeric(entrada[col], errors="coerce")
+        entrada[col] = entrada[col].fillna(medianas.get(col, 0))
+
+    entrada = entrada.fillna(0)
 
     return entrada
 
 
-def prever_probabilidade(modelo, entrada: pd.DataFrame) -> float:
+def prever_probabilidade(modelo: Any, entrada: pd.DataFrame) -> float:
     if hasattr(modelo, "predict_proba"):
         proba = modelo.predict_proba(entrada)
         return float(proba[0, 1])
@@ -176,10 +242,37 @@ def prever_probabilidade(modelo, entrada: pd.DataFrame) -> float:
     raise ValueError("Modelo sem predict_proba() e sem predict().")
 
 
-artefato = carregar_artefato()
-modelo = extrair_modelo(artefato)
-features_esperadas = carregar_features_esperadas(modelo)
-medianas = carregar_medianas()
+# ============================================================
+# ESTADO GLOBAL DA APLICAÇÃO
+# ============================================================
+
+artefato = None
+modelo = None
+features_esperadas: List[str] = []
+medianas: Dict[str, float] = {}
+threshold_padrao_modelo = DEFAULT_THRESHOLD
+
+
+def recarregar_recursos() -> None:
+    global artefato, modelo, features_esperadas, medianas, threshold_padrao_modelo
+
+    artefato = carregar_artefato()
+    modelo = extrair_modelo(artefato)
+    features_esperadas = carregar_features_esperadas(modelo, artefato)
+    medianas = carregar_medianas(artefato)
+    threshold_padrao_modelo = extrair_threshold_padrao(artefato)
+
+    logger.info("Modelo extraído: %s", modelo is not None)
+    logger.info("Quantidade de features carregadas: %s", len(features_esperadas))
+    logger.info("Quantidade de medianas carregadas: %s", len(medianas))
+    logger.info("Threshold padrão carregado: %.4f", threshold_padrao_modelo)
+
+
+recarregar_recursos()
+
+# ============================================================
+# ENDPOINTS
+# ============================================================
 
 
 @app.get("/")
@@ -187,6 +280,8 @@ def root():
     return {
         "mensagem": "API de detecção de sepse ativa.",
         "docs": "/docs",
+        "health": "/health",
+        "metadata": "/metadata",
     }
 
 
@@ -200,7 +295,10 @@ def health():
         "tipo_modelo": str(type(modelo)) if modelo is not None else None,
         "features_carregadas": len(features_esperadas),
         "medianas_carregadas": len(medianas),
+        "threshold_padrao_modelo": threshold_padrao_modelo,
         "caminho_modelo": str(MODEL_PATH),
+        "caminho_features_csv": str(FEATURES_PATH),
+        "caminho_medianas_csv": str(MEDIANAS_PATH),
     }
 
 
@@ -208,11 +306,23 @@ def health():
 def metadata():
     return {
         "nome_projeto": "Detecção de Sepse com Machine Learning",
-        "versao_api": "1.3.0",
-        "threshold_padrao": DEFAULT_THRESHOLD,
+        "versao_api": API_VERSION,
+        "threshold_padrao": threshold_padrao_modelo,
         "modelo_extraido": modelo is not None,
         "features_carregadas": len(features_esperadas),
         "medianas_carregadas": len(medianas),
+    }
+
+
+@app.post("/reload")
+def reload_model():
+    recarregar_recursos()
+    return {
+        "mensagem": "Recursos recarregados com sucesso.",
+        "modelo_extraido": modelo is not None,
+        "features_carregadas": len(features_esperadas),
+        "medianas_carregadas": len(medianas),
+        "threshold_padrao_modelo": threshold_padrao_modelo,
     }
 
 
@@ -237,18 +347,24 @@ def predict(payload: PredictRequest):
             medianas,
         )
 
-        # Prints de diagnóstico para o terminal
-        print("Features esperadas:", len(features_esperadas))
-        print("Colunas da entrada:", len(entrada.columns))
-        print("Primeiras 20 colunas da entrada:", entrada.columns[:20].tolist())
+        threshold_utilizado = (
+            float(payload.threshold)
+            if payload.threshold is not None
+            else float(threshold_padrao_modelo)
+        )
 
         probabilidade = prever_probabilidade(modelo, entrada)
-        predicao = int(probabilidade >= payload.threshold)
+        predicao = int(probabilidade >= threshold_utilizado)
         classe = "sepse" if predicao == 1 else "sem sepse"
+
+        logger.info("Features esperadas: %s", len(features_esperadas))
+        logger.info("Colunas da entrada: %s", len(entrada.columns))
+        logger.info("Threshold utilizado: %.4f", threshold_utilizado)
+        logger.info("Probabilidade prevista: %.4f", probabilidade)
 
         return PredictResponse(
             probabilidade_sepse=round(float(probabilidade), 4),
-            threshold_utilizado=payload.threshold,
+            threshold_utilizado=round(float(threshold_utilizado), 4),
             predicao=predicao,
             classe_predita=classe,
         )
@@ -261,4 +377,4 @@ def predict(payload: PredictRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
