@@ -1,0 +1,35 @@
+{
+  "accuracy": 0.15333333333333332,
+  "recall": 0.9809885931558935,
+  "precision": 0.09237379162191192,
+  "f1_score": 0.168848167539267,
+  "confusion_matrix": [
+    [
+      202,
+      2535
+    ],
+    [
+      5,
+      258
+    ]
+  ],
+  "true_negatives": 202,
+  "false_positives": 2535,
+  "false_negatives": 5,
+  "true_positives": 258,
+  "threshold": 0.12,
+  "fitness": 0.5967394441900743,
+  "execution_time_seconds": 7.5321,
+  "hyperparameters": {
+    "max_depth": 7,
+    "learning_rate": 0.03115,
+    "n_estimators": 127,
+    "subsample": 0.68746,
+    "colsample_bytree": 0.80214,
+    "min_child_weight": 1,
+    "gamma": 2.80623,
+    "reg_alpha": 3.5801,
+    "reg_lambda": 5.75994
+  },
+  "quick": true
+}

@@ -1,235 +1,199 @@
-# 🩺 Detecção de Sepse com Machine Learning
+# Deteccao de Sepse com Machine Learning - Tech Challenge Fase 2
 
-<p align="center">
-  Projeto de Machine Learning para apoio à <strong>triagem de risco de sepse</strong>,
-  com foco em <strong>alta sensibilidade</strong>, análise de erros e interpretabilidade clínica.
-</p>
+Projeto academico de Machine Learning para apoio a triagem de risco de sepse. A Fase 2 evolui o modelo da Fase 1 com otimizacao de hiperparametros por Algoritmo Genetico e explicacoes em linguagem natural com LLM.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" />
-  <img src="https://img.shields.io/badge/FastAPI-API-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/XGBoost-Modelo-orange?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Status-Acadêmico-blue?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Licença-MIT-black?style=for-the-badge" />
-</p>
+Importante: este projeto nao usa dados reais identificaveis de pacientes e nao substitui avaliacao medica. A LLM apenas explica a saida do modelo, sem emitir diagnostico definitivo.
 
----
+## Problema
 
-## 📌 Sobre o projeto
+A sepse e uma condicao clinica critica. Neste contexto, reduzir falsos negativos e mais importante do que maximizar accuracy isolada, pois um falso negativo pode classificar um paciente com risco como sem risco. Por isso, a otimizacao prioriza:
 
-Este projeto foi desenvolvido com o objetivo de construir um modelo capaz de identificar pacientes com maior probabilidade de **sepse** a partir de:
+- recall;
+- F1-score;
+- penalizacao proporcional a falsos negativos.
 
-- sinais vitais
-- exames laboratoriais
-- variáveis clínicas
-- atributos temporais derivados
-
-A proposta é atuar como uma ferramenta de **apoio à triagem**, priorizando a detecção de casos suspeitos e permitindo análise detalhada de:
-
-- **recall**
-- **precision**
-- **specificity**
-- **falsos positivos**
-- **falsos negativos**
-- **importância das variáveis**
-- **interpretabilidade com SHAP**
-
----
-
-## 🎯 Objetivo
-
-Desenvolver um pipeline de Machine Learning para apoio à detecção de sepse com foco em:
-
-- **alta sensibilidade**
-- redução do risco de perder casos reais
-- interpretação clínica dos resultados
-- análise aprofundada dos erros do modelo
-
----
-
-## 🧠 Estratégia adotada
-
-Como a sepse é um problema clínico crítico, a modelagem foi orientada para **priorizar sensibilidade**.
-
-Na prática, isso significa que o projeto busca:
-
-- capturar o maior número possível de casos positivos
-- aceitar um volume maior de falsos positivos quando necessário
-- analisar se esses falsos positivos são apenas ruído ou também representam pacientes clinicamente instáveis
-
-Além do classificador principal, o projeto também explora a ideia de duas saídas finais:
-
-- **triagem sensível**
-- **alerta forte**
-
-Essa abordagem permite comparar um cenário mais sensível com outro mais restritivo.
-
----
-
-## 🗂️ Estrutura do projeto
+## Estrutura
 
 ```text
 .
-│   Dockerfile
-│   License
-│   MODEL_CARD.md
-│   README.md
-│   __main__.py
-│
-├───data
-│   └───processed
-│           features_modelo_com_tempo_admin.csv
-│           features_modelo_sem_tempo_admin.csv
-│           medianas_treino_com_tempo_admin.csv
-│           medianas_treino_sem_tempo_admin.csv
-│           test_melhor.parquet
-│           train_melhor.parquet
-│           val_melhor.parquet
-│
-├───modelos_salvos
-│       modelo_sepse_sem_tempo_admin.pkl
-│
-└───notebook
-    │   analise_sepse_2.0.ipynb
-    │
-    └───catboost_info
-        │   catboost_training.json
-        │   learn_error.tsv
-        │   time_left.tsv
-
+|-- __main__.py                         # API FastAPI original
+|-- data/processed/                     # dados processados da Fase 1
+|-- modelos_salvos/                     # modelo original da Fase 1
+|-- models/                             # modelo otimizado da Fase 2
+|-- notebook/                           # notebook original
+|-- reports/                            # metricas, graficos e relatorios
+|-- logs/                               # logs de treino e GA
+|-- tests/                              # testes automatizados
+|-- src/tc_fase2/
+|   |-- config.py
+|   |-- project_io.py
+|   |-- metrics.py
+|   |-- genetic_algorithm.py
+|   |-- train_baseline.py
+|   |-- run_ga_experiments.py
+|   |-- train_optimized_model.py
+|   |-- compare_models.py
+|   `-- llm_explainer.py
+`-- requirements.txt
 ```
-# ▶️ Como executar o projeto
 
-## 1. Executando localmente
-
-### Pré-requisitos
-
-- Python 3.11 ou superior
-- pip instalado
-
-### Instalar as dependências
+## Ambiente
 
 ```bash
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
-### Rodar a API:
+
+Para usar chamada real a LLM, instale tambem o SDK da OpenAI e configure a chave por variavel de ambiente:
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+pip install openai
 ```
-### Acessar no navegador:
 
-- API: http://localhost:8000
-- Documentação interativa: http://localhost:8000/docs
-- Status da API: http://localhost:8000/health
+PowerShell:
 
-## 2. Executando com Docker
+```powershell
+$env:OPENAI_API_KEY="sua_chave"
+```
 
-### Construir a imagem: 
+CMD:
+
+```cmd
+set OPENAI_API_KEY=sua_chave
+```
+
+Sem `OPENAI_API_KEY`, o projeto usa fallback local baseado em template.
+
+## API original
 
 ```bash
-docker build -t projeto-sepse .
+python __main__.py
 ```
-### Rodar o container: 
+
+Endpoints principais:
+
+- `GET /health`
+- `GET /metadata`
+- `POST /predict`
+- `POST /reload`
+
+## Rodar baseline
+
+Avalia o modelo original salvo em `modelos_salvos/modelo_sepse_sem_tempo_admin.pkl`.
 
 ```bash
-docker run -p 8000:8000 projeto-sepse
+python -m src.tc_fase2.train_baseline
 ```
-## Acessar no navegador
 
-- API: http://localhost:8000
-- Documentação interativa: http://localhost:8000/docs
-- Status da API: http://localhost:8000/health
+Modo rapido:
 
-## 3. Testando a API
-
-### Teste simples de saúde: 
-
-curl http://localhost:8000/health
-
-### Exemplo de predição:
 ```bash
-curl -X POST "http://localhost:8000/predict" \
--H "Content-Type: application/json" \
--d '{
-  "features": {
-    "HR": 110,
-    "Temp": 38.2,
-    "Resp": 24,
-    "MAP": 62,
-    "Lactate": 2.8,
-    "WBC": 16.5,
-    "Creatinine": 1.9,
-    "Age": 67,
-    "SBP": 95,
-    "DBP": 58,
-    "O2Sat": 91,
-    "FiO2": 0.4,
-    "Platelets": 120,
-    "BUN": 34
-  },
-  "threshold": 0.12
-}'
+python -m src.tc_fase2.train_baseline --quick
 ```
-## 🩺 Endpoints disponíveis
 
-- GET /
+Saidas:
 
-### Retorna uma mensagem indicando que a API está ativa.
+- `reports/baseline_metrics.json`
+- `reports/baseline_confusion_matrix.png`
+- `logs/training.log`
 
-- GET /health
+## Rodar experimentos do Algoritmo Genetico
 
-### Retorna o status da aplicação e informações sobre carregamento do modelo.
+Executa 3 configuracoes obrigatorias de GA:
 
-- GET /metadata
+- populacao 10, geracoes 5, mutacao 0.10;
+- populacao 20, geracoes 8, mutacao 0.20;
+- populacao 30, geracoes 10, mutacao 0.30.
 
-### Retorna metadados da API e do modelo carregado.
+```bash
+python -m src.tc_fase2.run_ga_experiments
+```
 
-- POST /predict
+Modo rapido:
 
-### Recebe as variáveis clínicas do paciente e retorna a probabilidade de sepse e a classe predita.
+```bash
+python -m src.tc_fase2.run_ga_experiments --quick
+```
 
-- POST /reload
+Saidas:
 
-### Recarrega o artefato salvo sem precisar reiniciar a aplicação.
+- `reports/ga_experiment_1.json`
+- `reports/ga_experiment_2.json`
+- `reports/ga_experiment_3.json`
+- `reports/ga_experiments_summary.csv`
+- `reports/ga_fitness_history.csv`
+- `logs/ga_experiments.log`
 
-# 📦 Arquivos necessários
+## Treinar modelo otimizado
 
-## Para a API funcionar corretamente, estes arquivos devem existir no projeto.
+Depois dos experimentos, treine o modelo final com os melhores hiperparametros encontrados.
 
-### Modelo salvo:
+```bash
+python -m src.tc_fase2.train_optimized_model
+```
 
-modelos_salvos/modelo_sepse_sem_tempo_admin.pkl
+Modo rapido:
 
-### Arquivos auxiliares:
+```bash
+python -m src.tc_fase2.train_optimized_model --quick
+```
 
-data/processed/features_modelo_sem_tempo_admin.csv
-data/processed/medianas_treino_sem_tempo_admin.csv
+Saidas:
 
-## 📊 Notebook principal
+- `models/optimized_model.pkl`
+- `reports/optimized_metrics.json`
+- `reports/optimized_confusion_matrix.png`
+- `logs/training.log`
 
-### O treinamento, avaliação, análise e geração do artefato .pkl são feitos no notebook:
+## Comparar modelos
 
-- notebooks/analise_sepse_2.0.ipynb
+```bash
+python -m src.tc_fase2.compare_models
+```
 
-### Esse notebook inclui:
+Saidas:
 
-- leitura e preparação dos dados
-- engenharia de features
-- treinamento dos modelos
-- comparação de métricas
-- análise de desempenho
-- salvamento do modelo final
+- `reports/model_comparison.csv`
+- `reports/model_comparison.md`
 
+## Gerar explicacao com LLM ou fallback local
 
+```bash
+python -m src.tc_fase2.llm_explainer --mock
+```
 
+Saidas:
 
-## 👨‍💻 Grupo: 
+- `reports/llm_explanation_examples.json`
+- `reports/llm_prompt_used.md`
+
+O prompt instrui a LLM a responder em portugues claro, nao inventar dados, usar apenas as informacoes fornecidas, nao afirmar diagnostico definitivo e reforcar que a saida e apoio a decisao clinica.
+
+## Testes
+
+```bash
+pytest
+```
+
+Os testes cobrem:
+
+- populacao inicial valida;
+- mutacao dentro dos limites;
+- crossover valido;
+- fitness numerica;
+- prompt com dados obrigatorios;
+- fallback da LLM sem API key;
+- calculo basico de metricas.
+
+## Principais resultados
+
+Os resultados quantitativos devem ser gerados localmente pelos comandos acima. O relatorio inicial esta em `reports/relatorio_tecnico.md` e deixa campos marcados quando dependem da execucao real dos experimentos.
+
+## Grupo
 
 - Matheus Brito da Silva rm373928
 - Ricardo Pinto rm374174
 - Felipe Monay rm366815
 - Ari Monteiro rm371705
-- Pedro Artur Araújo Pinto rm373866
-
-```
+- Pedro Artur Araujo Pinto rm373866
