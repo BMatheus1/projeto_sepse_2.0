@@ -1,0 +1,26 @@
+{
+  "artifact_source": "optimized",
+  "artifact_path": "C:\\Users\\Mathe\\OneDrive\\Área de Trabalho\\projects\\projeto_sepse_2.0\\models\\optimized_model.pkl",
+  "probability": 0.6370964646339417,
+  "threshold": 0.15,
+  "predicted_class": 1,
+  "predicted_label": "sepse",
+  "clinical_variables": {
+    "MAP": 58.0,
+    "Lactate": 3.1,
+    "Resp": 28.0,
+    "Temp": 38.4,
+    "WBC": 16.0,
+    "HR": 112.0
+  },
+  "influencing_factors": [
+    "pressao arterial media baixa",
+    "lactato elevado",
+    "frequencia respiratoria aumentada",
+    "temperatura alterada",
+    "leucocitos alterados",
+    "frequencia cardiaca elevada"
+  ],
+  "explanation_mode": "template_fallback",
+  "explanation": "O modelo preditivo estimou probabilidade de sepse de 63.7% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliacao medica imediata conforme protocolo clinico. Os principais fatores informados associados a decisao foram: pressao arterial media baixa, lactato elevado, frequencia respiratoria aumentada, temperatura alterada, leucocitos alterados, frequencia cardiaca elevada. As variaveis clinicas consideradas na explicacao incluem: MAP, Lactate, Resp, Temp, WBC, HR. Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica."
+}

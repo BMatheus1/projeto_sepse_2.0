@@ -1,40 +1,30 @@
 # Deteccao de Sepse com Machine Learning - Tech Challenge Fase 2
 
-Projeto academico de Machine Learning para apoio a triagem de risco de sepse. A Fase 2 evolui o modelo da Fase 1 com otimizacao de hiperparametros por Algoritmo Genetico e explicacoes em linguagem natural com LLM.
+Projeto academico para apoio a triagem de risco de sepse. A Fase 2 evolui a base da Fase 1 com otimizacao de hiperparametros por Algoritmo Genetico, ajuste de threshold em validacao e explicacoes em linguagem natural com LLM ou fallback local.
 
-Importante: este projeto nao usa dados reais identificaveis de pacientes e nao substitui avaliacao medica. A LLM apenas explica a saida do modelo, sem emitir diagnostico definitivo.
-
-## Problema
-
-A sepse e uma condicao clinica critica. Neste contexto, reduzir falsos negativos e mais importante do que maximizar accuracy isolada, pois um falso negativo pode classificar um paciente com risco como sem risco. Por isso, a otimizacao prioriza:
-
-- recall;
-- F1-score;
-- penalizacao proporcional a falsos negativos.
+Este projeto nao substitui avaliacao medica. A LLM apenas explica a saida do modelo preditivo e nao emite diagnostico definitivo.
 
 ## Estrutura
 
 ```text
 .
-|-- __main__.py                         # API FastAPI original
+|-- __main__.py                         # API FastAPI original + /predict/explain
 |-- data/processed/                     # dados processados da Fase 1
-|-- modelos_salvos/                     # modelo original da Fase 1
-|-- models/                             # modelo otimizado da Fase 2
-|-- notebook/                           # notebook original
+|-- modelos_salvos/                     # modelo original
+|-- models/                             # modelo otimizado
 |-- reports/                            # metricas, graficos e relatorios
-|-- logs/                               # logs de treino e GA
+|-- logs/                               # logs
 |-- tests/                              # testes automatizados
-|-- src/tc_fase2/
-|   |-- config.py
-|   |-- project_io.py
-|   |-- metrics.py
-|   |-- genetic_algorithm.py
-|   |-- train_baseline.py
-|   |-- run_ga_experiments.py
-|   |-- train_optimized_model.py
-|   |-- compare_models.py
-|   `-- llm_explainer.py
-`-- requirements.txt
+`-- src/tc_fase2/
+    |-- genetic_algorithm.py
+    |-- threshold_tuning.py
+    |-- train_baseline.py
+    |-- run_ga_experiments.py
+    |-- train_optimized_model.py
+    |-- compare_models.py
+    |-- llm_explainer.py
+    |-- predict_and_explain.py
+    `-- update_report_results.py
 ```
 
 ## Ambiente
@@ -45,11 +35,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Para usar chamada real a LLM, instale tambem o SDK da OpenAI e configure a chave por variavel de ambiente:
-
-```bash
-pip install openai
-```
+Para usar LLM real, configure `OPENAI_API_KEY`. Sem chave, o sistema usa fallback local.
 
 PowerShell:
 
@@ -57,143 +43,130 @@ PowerShell:
 $env:OPENAI_API_KEY="sua_chave"
 ```
 
-CMD:
+## Execucao rapida de teste
 
-```cmd
-set OPENAI_API_KEY=sua_chave
+Use apenas para validar o fluxo tecnico. Resultados `quick=True` nao devem ser usados como resultado final da entrega.
+
+```bash
+python -m src.tc_fase2.train_baseline --quick
+python -m src.tc_fase2.run_ga_experiments --quick
+python -m src.tc_fase2.train_optimized_model --quick --allow-quick-results
+python -m src.tc_fase2.compare_models
+python -m src.tc_fase2.llm_explainer --mock
+python -m src.tc_fase2.predict_and_explain
+pytest
 ```
 
-Sem `OPENAI_API_KEY`, o projeto usa fallback local baseado em template.
+O treino otimizado bloqueia automaticamente hiperparametros vindos de `quick=True` quando `--allow-quick-results` nao e informado.
 
-## API original
+## Execucao final
+
+Use estes comandos para gerar resultados finais completos:
+
+```bash
+python -m src.tc_fase2.train_baseline
+python -m src.tc_fase2.run_ga_experiments
+python -m src.tc_fase2.train_optimized_model
+python -m src.tc_fase2.compare_models
+python -m src.tc_fase2.llm_explainer --mock
+python -m src.tc_fase2.predict_and_explain
+python -m src.tc_fase2.update_report_results
+pytest
+```
+
+Saidas principais:
+
+- `reports/baseline_metrics.json`
+- `reports/ga_experiments_summary.csv`
+- `reports/threshold_tuning.csv`
+- `reports/best_threshold.json`
+- `models/optimized_model.pkl`
+- `reports/optimized_metrics.json`
+- `reports/model_comparison.md`
+- `reports/predict_and_explain_example.json`
+- `reports/relatorio_resultados.md`
+
+## Ajuste de threshold
+
+O modelo otimizado nao aplica diretamente um threshold fixo no teste. O script `train_optimized_model.py`:
+
+1. treina um modelo com treino;
+2. calcula probabilidades na validacao;
+3. testa thresholds de `0.05` a `0.50`;
+4. escolhe o melhor por fitness;
+5. treina o modelo final com treino + validacao;
+6. aplica o threshold escolhido ao teste.
+
+A formula documentada e:
+
+```text
+fitness = recall * 0.50 + f1_score * 0.35 + precision * 0.10 - fn_penalty * 0.05
+```
+
+O teste nunca e usado para escolher threshold.
+
+## Interpretacao dos resultados
+
+Em sepse, recall e falsos negativos sao mais importantes que accuracy isolada. Um falso negativo pode deixar de sinalizar um paciente em risco.
+
+O trade-off esperado e:
+
+- recall maior tende a reduzir falsos negativos;
+- falsos positivos podem subir quando o modelo fica mais sensivel;
+- precision pode cair se houver muitos alertas falsos;
+- F1-score ajuda a observar equilibrio entre precision e recall;
+- a decisao final sempre depende de avaliacao clinica.
+
+## API
+
+Rodar API:
 
 ```bash
 python __main__.py
 ```
 
-Endpoints principais:
+Endpoints:
 
 - `GET /health`
 - `GET /metadata`
 - `POST /predict`
+- `POST /predict/explain`
 - `POST /reload`
 
-## Rodar baseline
+## Endpoint com explicacao
 
-Avalia o modelo original salvo em `modelos_salvos/modelo_sepse_sem_tempo_admin.pkl`.
+`POST /predict/explain` recebe o mesmo payload de `/predict` e retorna:
 
-```bash
-python -m src.tc_fase2.train_baseline
+- `probabilidade_sepse`
+- `threshold_utilizado`
+- `predicao`
+- `classe_predita`
+- `explicacao`
+- `modo_explicacao`
+
+Sem `OPENAI_API_KEY`, a explicacao usa template local seguro.
+
+## Exemplo de payload
+
+```json
+{
+  "features": {
+    "HR": 112,
+    "Temp": 38.4,
+    "Resp": 28,
+    "MAP": 58,
+    "Lactate": 3.1,
+    "WBC": 16
+  },
+  "threshold": 0.12
+}
 ```
 
-Modo rapido:
+Features ausentes sao preenchidas com medianas do treino quando disponiveis.
 
-```bash
-python -m src.tc_fase2.train_baseline --quick
-```
+## Relatorios
 
-Saidas:
+- `reports/relatorio_tecnico.md`: relatorio tecnico inicial.
+- `reports/relatorio_resultados.md`: complemento gerado automaticamente com metricas disponiveis.
 
-- `reports/baseline_metrics.json`
-- `reports/baseline_confusion_matrix.png`
-- `logs/training.log`
-
-## Rodar experimentos do Algoritmo Genetico
-
-Executa 3 configuracoes obrigatorias de GA:
-
-- populacao 10, geracoes 5, mutacao 0.10;
-- populacao 20, geracoes 8, mutacao 0.20;
-- populacao 30, geracoes 10, mutacao 0.30.
-
-```bash
-python -m src.tc_fase2.run_ga_experiments
-```
-
-Modo rapido:
-
-```bash
-python -m src.tc_fase2.run_ga_experiments --quick
-```
-
-Saidas:
-
-- `reports/ga_experiment_1.json`
-- `reports/ga_experiment_2.json`
-- `reports/ga_experiment_3.json`
-- `reports/ga_experiments_summary.csv`
-- `reports/ga_fitness_history.csv`
-- `logs/ga_experiments.log`
-
-## Treinar modelo otimizado
-
-Depois dos experimentos, treine o modelo final com os melhores hiperparametros encontrados.
-
-```bash
-python -m src.tc_fase2.train_optimized_model
-```
-
-Modo rapido:
-
-```bash
-python -m src.tc_fase2.train_optimized_model --quick
-```
-
-Saidas:
-
-- `models/optimized_model.pkl`
-- `reports/optimized_metrics.json`
-- `reports/optimized_confusion_matrix.png`
-- `logs/training.log`
-
-## Comparar modelos
-
-```bash
-python -m src.tc_fase2.compare_models
-```
-
-Saidas:
-
-- `reports/model_comparison.csv`
-- `reports/model_comparison.md`
-
-## Gerar explicacao com LLM ou fallback local
-
-```bash
-python -m src.tc_fase2.llm_explainer --mock
-```
-
-Saidas:
-
-- `reports/llm_explanation_examples.json`
-- `reports/llm_prompt_used.md`
-
-O prompt instrui a LLM a responder em portugues claro, nao inventar dados, usar apenas as informacoes fornecidas, nao afirmar diagnostico definitivo e reforcar que a saida e apoio a decisao clinica.
-
-## Testes
-
-```bash
-pytest
-```
-
-Os testes cobrem:
-
-- populacao inicial valida;
-- mutacao dentro dos limites;
-- crossover valido;
-- fitness numerica;
-- prompt com dados obrigatorios;
-- fallback da LLM sem API key;
-- calculo basico de metricas.
-
-## Principais resultados
-
-Os resultados quantitativos devem ser gerados localmente pelos comandos acima. O relatorio inicial esta em `reports/relatorio_tecnico.md` e deixa campos marcados quando dependem da execucao real dos experimentos.
-
-## Grupo
-
-- Matheus Brito da Silva rm373928
-- Ricardo Pinto rm374174
-- Felipe Monay rm366815
-- Ari Monteiro rm371705
-- Pedro Artur Araujo Pinto rm373866
+Se os CSV/JSON atuais estiverem marcados com `quick=True`, eles representam apenas validacao tecnica. Rode a execucao final para preencher metricas finais reais.

@@ -55,6 +55,11 @@ class PredictResponse(BaseModel):
     classe_predita: str
 
 
+class PredictExplainResponse(PredictResponse):
+    explicacao: str
+    modo_explicacao: str
+
+
 # ============================================================
 # FUNÇÕES DE CARREGAMENTO
 # ============================================================
@@ -242,6 +247,65 @@ def prever_probabilidade(modelo: Any, entrada: pd.DataFrame) -> float:
     raise ValueError("Modelo sem predict_proba() e sem predict().")
 
 
+def selecionar_variaveis_clinicas(features_recebidas: Dict[str, Any]) -> Dict[str, Any]:
+    chaves = ["MAP", "Lactate", "Resp", "Temp", "WBC", "HR"]
+    return {chave: features_recebidas[chave] for chave in chaves if chave in features_recebidas}
+
+
+def selecionar_fatores_simples(variaveis: Dict[str, Any]) -> List[str]:
+    fatores = []
+    try:
+        if "MAP" in variaveis and float(variaveis["MAP"]) < 65:
+            fatores.append("pressao arterial media baixa")
+        if "Lactate" in variaveis and float(variaveis["Lactate"]) >= 2:
+            fatores.append("lactato elevado")
+        if "Resp" in variaveis and float(variaveis["Resp"]) >= 22:
+            fatores.append("frequencia respiratoria aumentada")
+        if "Temp" in variaveis and (float(variaveis["Temp"]) >= 38 or float(variaveis["Temp"]) < 36):
+            fatores.append("temperatura alterada")
+        if "WBC" in variaveis and (float(variaveis["WBC"]) >= 12 or float(variaveis["WBC"]) < 4):
+            fatores.append("leucocitos alterados")
+        if "HR" in variaveis and float(variaveis["HR"]) >= 100:
+            fatores.append("frequencia cardiaca elevada")
+    except Exception as exc:
+        logger.warning("Erro ao selecionar fatores clinicos simples: %s", exc)
+    return fatores
+
+
+def gerar_explicacao_segura(
+    probabilidade: float,
+    predicao: int,
+    features_recebidas: Dict[str, Any],
+) -> Dict[str, str]:
+    variaveis = selecionar_variaveis_clinicas(features_recebidas)
+    fatores = selecionar_fatores_simples(variaveis)
+    try:
+        from src.tc_fase2.llm_explainer import generate_explanation
+
+        resultado = generate_explanation(
+            probability=probabilidade,
+            predicted_class=predicao,
+            clinical_variables=variaveis,
+            influencing_factors=fatores,
+            use_llm=True,
+        )
+        return {
+            "explicacao": str(resultado["explanation"]),
+            "modo_explicacao": str(resultado["mode"]),
+        }
+    except Exception as exc:
+        logger.warning("Fallback local de explicacao acionado: %s", exc)
+        classe = "risco elevado de sepse" if predicao == 1 else "sem risco elevado de sepse"
+        return {
+            "explicacao": (
+                f"O modelo estimou probabilidade de sepse de {probabilidade:.1%} e classificou o caso como "
+                f"{classe}. Esta explicacao usa apenas dados fornecidos, nao e diagnostico definitivo "
+                "e nao substitui avaliacao medica."
+            ),
+            "modo_explicacao": "api_template_fallback",
+        }
+
+
 # ============================================================
 # ESTADO GLOBAL DA APLICAÇÃO
 # ============================================================
@@ -374,6 +438,54 @@ def predict(payload: PredictRequest):
             status_code=400,
             detail=f"Erro ao processar a predição: {exc}",
         ) from exc
+
+@app.post("/predict/explain", response_model=PredictExplainResponse)
+def predict_explain(payload: PredictRequest):
+    if modelo is None:
+        raise HTTPException(
+            status_code=500,
+            detail="Modelo nÃ£o extraÃ­do do artefato.",
+        )
+
+    if not features_esperadas:
+        raise HTTPException(
+            status_code=500,
+            detail="Lista de features nÃ£o carregada.",
+        )
+
+    try:
+        entrada = preparar_entrada(
+            payload.features,
+            features_esperadas,
+            medianas,
+        )
+
+        threshold_utilizado = (
+            float(payload.threshold)
+            if payload.threshold is not None
+            else float(threshold_padrao_modelo)
+        )
+
+        probabilidade = prever_probabilidade(modelo, entrada)
+        predicao = int(probabilidade >= threshold_utilizado)
+        classe = "sepse" if predicao == 1 else "sem sepse"
+        explicacao = gerar_explicacao_segura(probabilidade, predicao, payload.features)
+
+        return PredictExplainResponse(
+            probabilidade_sepse=round(float(probabilidade), 4),
+            threshold_utilizado=round(float(threshold_utilizado), 4),
+            predicao=predicao,
+            classe_predita=classe,
+            explicacao=explicacao["explicacao"],
+            modo_explicacao=explicacao["modo_explicacao"],
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Erro ao processar a predicao com explicacao: {exc}",
+        ) from exc
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

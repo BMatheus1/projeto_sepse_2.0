@@ -1,4 +1,4 @@
-from src.tc_fase2.llm_explainer import build_prompt, generate_explanation, local_template_explanation
+from src.tc_fase2.llm_explainer import build_prompt, generate_explanation, local_template_explanation, save_example
 
 
 def test_prompt_contains_required_data():
@@ -31,3 +31,11 @@ def test_local_fallback_works_without_api_key(monkeypatch):
 def test_template_does_not_invent_missing_factors():
     text = local_template_explanation(probability=0.2, predicted_class=0)
     assert "Nao foram fornecidos fatores" in text
+    assert "nao exclui avaliacao clinica" in text
+
+
+def test_save_example_generates_positive_and_negative(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    result = save_example()
+    assert "positive_example" in result["examples"]
+    assert "negative_example" in result["examples"]

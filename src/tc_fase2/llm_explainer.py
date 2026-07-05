@@ -10,7 +10,8 @@ from .config import REPORTS_DIR, ensure_project_dirs
 
 
 SAFETY_MESSAGE = (
-    "Esta explicacao e apenas apoio a decisao clinica e nao substitui avaliacao de uma equipe medica."
+    "Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo "
+    "e nao substitui avaliacao de uma equipe medica."
 )
 
 
@@ -59,6 +60,7 @@ Regras obrigatorias:
 - Explique que o resultado e apoio a decisao clinica.
 - Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.
 - Recomende avaliacao medica quando houver risco alto.
+- Se a classe prevista for 0, explique que risco elevado nao foi identificado pelo modelo, mas isso nao exclui avaliacao clinica.
 
 Dados do modelo:
 - Probabilidade prevista de sepse: {probability:.4f}
@@ -85,6 +87,13 @@ def local_template_explanation(
 ) -> str:
     class_int = _class_to_int(predicted_class)
     risk_text = "risco elevado de sepse" if class_int == 1 else "sem risco elevado de sepse"
+    if class_int == 1:
+        class_sentence = " Recomenda-se avaliacao medica imediata conforme protocolo clinico."
+    else:
+        class_sentence = (
+            " O modelo nao identificou risco elevado, mas esse resultado nao exclui avaliacao clinica "
+            "quando houver sinais, sintomas ou julgamento profissional."
+        )
     factors = ", ".join(influencing_factors or [])
     factor_sentence = (
         f" Os principais fatores informados associados a decisao foram: {factors}."
@@ -99,7 +108,7 @@ def local_template_explanation(
     )
     return (
         f"O modelo preditivo estimou probabilidade de sepse de {probability:.1%} e classificou o paciente como "
-        f"{risk_text}.{factor_sentence}{variable_sentence} {safety_message}"
+        f"{risk_text}.{class_sentence}{factor_sentence}{variable_sentence} {safety_message}"
     )
 
 
@@ -129,7 +138,7 @@ def generate_explanation(
     model: str = "gpt-4.1-mini",
 ) -> Dict[str, Any]:
     prompt = build_prompt(probability, predicted_class, clinical_variables, influencing_factors)
-    mode = "llm"
+    mode = "llm" if use_llm else "template_fallback"
     try:
         explanation = call_llm(prompt, model=model) if use_llm else local_template_explanation(
             probability, predicted_class, clinical_variables, influencing_factors
@@ -171,13 +180,26 @@ def write_prompt_documentation() -> None:
 
 def save_example() -> Dict[str, Any]:
     ensure_project_dirs()
-    result = generate_explanation(
-        probability=0.72,
-        predicted_class=1,
-        clinical_variables={"MAP": 58, "Lactate": 3.1, "Resp": 28},
-        influencing_factors=["MAP baixa", "lactato elevado", "frequencia respiratoria aumentada"],
-        use_llm=bool(os.getenv("OPENAI_API_KEY")),
-    )
+    examples = {
+        "positive_example": generate_explanation(
+            probability=0.72,
+            predicted_class=1,
+            clinical_variables={"MAP": 58, "Lactate": 3.1, "Resp": 28},
+            influencing_factors=["MAP baixa", "lactato elevado", "frequencia respiratoria aumentada"],
+            use_llm=bool(os.getenv("OPENAI_API_KEY")),
+        ),
+        "negative_example": generate_explanation(
+            probability=0.07,
+            predicted_class=0,
+            clinical_variables={"MAP": 82, "Temp": 36.8, "Resp": 17},
+            influencing_factors=["sinais vitais dentro do esperado no exemplo"],
+            use_llm=bool(os.getenv("OPENAI_API_KEY")),
+        ),
+    }
+    result = {
+        "examples": examples,
+        "safety_message": SAFETY_MESSAGE,
+    }
     write_prompt_documentation()
     (REPORTS_DIR / "llm_explanation_examples.json").write_text(
         json.dumps(result, indent=2, ensure_ascii=False),

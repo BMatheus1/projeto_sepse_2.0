@@ -13,6 +13,7 @@ Regras obrigatorias:
 - Explique que o resultado e apoio a decisao clinica.
 - Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.
 - Recomende avaliacao medica quando houver risco alto.
+- Se a classe prevista for 0, explique que risco elevado nao foi identificado pelo modelo, mas isso nao exclui avaliacao clinica.
 
 Dados do modelo:
 - Probabilidade prevista de sepse: 0.7200
@@ -29,7 +30,7 @@ Fatores que influenciaram a decisao:
 - frequencia respiratoria aumentada
 
 Mensagem de seguranca:
-Esta explicacao e apenas apoio a decisao clinica e nao substitui avaliacao de uma equipe medica.
+Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica.
 
 Gere uma explicacao curta, objetiva e segura para uma equipe clinica.
 ```

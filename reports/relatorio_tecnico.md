@@ -2,37 +2,36 @@
 
 ## 1. Introducao
 
-Este relatorio descreve a evolucao do projeto de deteccao de sepse desenvolvido na Fase 1. A Fase 2 adiciona otimizacao de hiperparametros com Algoritmo Genetico e um modulo de explicacao em linguagem natural com LLM ou fallback local.
+Este projeto evolui a deteccao de risco de sepse da Fase 1 com otimizacao de hiperparametros por Algoritmo Genetico, ajuste de threshold e explicacoes em linguagem natural com LLM ou fallback local.
+
+O sistema e academico e nao substitui avaliacao medica.
 
 ## 2. Problema escolhido
 
-O problema escolhido e a triagem de risco de sepse com Machine Learning. Em contexto medico, a prioridade e reduzir falsos negativos, pois deixar de sinalizar um paciente em risco pode ter impacto clinico relevante.
+A sepse e uma condicao clinica critica. O principal risco operacional do modelo e o falso negativo: classificar como sem risco um paciente que deveria receber alerta. Por isso, a avaliacao prioriza recall, F1-score e reducao de falsos negativos.
 
 ## 3. Modelo original da Fase 1
 
-O projeto original possui uma API FastAPI em `__main__.py`, dados processados em `data/processed/`, notebook em `notebook/analise_sepse_2.0.ipynb` e artefato salvo em `modelos_salvos/modelo_sepse_sem_tempo_admin.pkl`.
+O projeto original contem:
 
-O artefato original contem um `XGBClassifier`, lista de features, medianas de treino e threshold de validacao.
+- API FastAPI em `__main__.py`;
+- dados processados em `data/processed/`;
+- artefato em `modelos_salvos/modelo_sepse_sem_tempo_admin.pkl`;
+- notebook de analise em `notebook/analise_sepse_2.0.ipynb`.
 
-Resultados do baseline: preencher apos executar `python -m src.tc_fase2.train_baseline`.
+O artefato original armazena modelo, features, medianas e threshold.
 
 ## 4. Estrategia de otimizacao
 
-A otimizacao nao usa accuracy como objetivo principal. A funcao fitness combina recall, F1-score e penalizacao proporcional aos falsos negativos.
-
-Formula usada:
+O Algoritmo Genetico otimiza hiperparametros do XGBoost. A fitness do GA prioriza recall e F1-score e penaliza falsos negativos:
 
 ```text
-fitness = recall * 0.55 + f1_score * 0.35 - penalizacao_fn * 0.10
+fitness = recall * 0.55 + f1_score * 0.35 - fn_penalty * 0.10
 ```
-
-A penalizacao por falso negativo e calculada como a proporcao de falsos negativos em relacao ao total de casos positivos.
 
 ## 5. Algoritmo genetico
 
-### Representacao dos genes
-
-Cada individuo representa um conjunto de hiperparametros do XGBoost:
+Genes avaliados:
 
 - `max_depth`
 - `learning_rate`
@@ -44,33 +43,11 @@ Cada individuo representa um conjunto de hiperparametros do XGBoost:
 - `reg_alpha`
 - `reg_lambda`
 
-### Populacao inicial
-
-A populacao inicial e gerada aleatoriamente dentro dos limites definidos em `src/tc_fase2/config.py`.
-
-### Selecao
-
-A selecao usa torneio, escolhendo o melhor individuo entre candidatos amostrados da populacao avaliada.
-
-### Crossover
-
-O crossover e uniforme: cada gene do filho vem de um dos dois pais.
-
-### Mutacao
-
-A mutacao sorteia novos valores para genes conforme a taxa definida no experimento.
-
-### Elitismo
-
-O melhor individuo de cada geracao e preservado para a proxima geracao.
-
-### Funcao fitness
-
-A funcao fitness prioriza recall e F1-score e penaliza falsos negativos. Esta escolha esta alinhada ao objetivo clinico de reduzir casos positivos nao detectados.
+O algoritmo implementa populacao inicial, avaliacao, selecao por torneio, crossover uniforme, mutacao, elitismo e historico por geracao.
 
 ## 6. Experimentos realizados
 
-Foram implementados tres experimentos:
+Foram configurados tres experimentos:
 
 | Experimento | Populacao | Geracoes | Mutacao |
 | --- | ---: | ---: | ---: |
@@ -78,94 +55,111 @@ Foram implementados tres experimentos:
 | 2 | 20 | 8 | 0.20 |
 | 3 | 30 | 10 | 0.30 |
 
-Resultados: preencher apos executar `python -m src.tc_fase2.run_ga_experiments`.
+Se `reports/ga_experiments_summary.csv` indicar `quick=True`, os resultados presentes sao de execucao rapida para validacao tecnica. Para a entrega final, executar os experimentos completos sem `--quick`.
 
-## 7. Resultados
+## 7. Ajuste de threshold
 
-Campos a preencher apos execucao real:
+Foi criado `src/tc_fase2/threshold_tuning.py` para escolher threshold no conjunto de validacao, antes da avaliacao no teste.
 
-- melhor fitness;
-- melhores hiperparametros;
-- accuracy;
-- recall;
-- precision;
-- F1-score;
-- falsos negativos;
-- falsos positivos;
-- tempo de execucao.
+Thresholds avaliados:
 
-Arquivos esperados:
+```text
+0.05, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50
+```
 
-- `reports/ga_experiments_summary.csv`
-- `reports/ga_fitness_history.csv`
+Formula usada no ajuste:
 
-## 8. Comparacao entre modelo original e otimizado
+```text
+fitness = recall * 0.50 + f1_score * 0.35 + precision * 0.10 - fn_penalty * 0.05
+```
 
-A comparacao e gerada por `python -m src.tc_fase2.compare_models`.
+O conjunto de teste nao e usado para escolher threshold.
 
-Arquivo esperado:
+## 8. Resultados
 
-- `reports/model_comparison.md`
+Os resultados finais devem ser gerados pelos comandos sem `--quick`. Quando os arquivos disponiveis forem `quick=True`, eles devem ser tratados apenas como validacao tecnica do pipeline.
 
-Na analise, recall e falsos negativos devem ter prioridade sobre accuracy isolada.
+O complemento automatico pode ser gerado com:
 
-## 9. Integracao com LLM
+```bash
+python -m src.tc_fase2.update_report_results
+```
 
-O modulo `src/tc_fase2/llm_explainer.py` gera explicacoes em linguagem natural a partir da probabilidade prevista, classe prevista, variaveis clinicas e fatores de influencia fornecidos.
+Arquivo gerado:
 
-A LLM nao faz diagnostico. Ela apenas explica a saida do modelo.
+- `reports/relatorio_resultados.md`
 
-## 10. Prompt engineering
+## 9. Comparacao entre baseline e otimizado
 
-O prompt instrui a LLM a:
+`src/tc_fase2/compare_models.py` gera:
 
-- explicar em portugues claro;
-- usar apenas dados fornecidos;
-- nao inventar informacoes;
-- nao afirmar diagnostico definitivo;
-- reforcar que e apoio a decisao clinica;
-- destacar fatores clinicos relevantes;
-- recomendar avaliacao medica em caso de risco alto.
+- tabela com metricas;
+- diferencas absolutas entre baseline e otimizado;
+- analise automatica do trade-off entre falsos negativos, falsos positivos, precision, recall e F1-score.
 
-Arquivo esperado:
+## 10. Trade-off do modelo otimizado
 
-- `reports/llm_prompt_used.md`
+Em problemas de sepse, aumentar recall pode elevar falsos positivos. Isso significa mais alertas falsos, mas reduz o risco de deixar de sinalizar pacientes positivos. A interpretacao final deve considerar sensibilidade, carga operacional e validacao clinica.
 
-## 11. Avaliacao das explicacoes geradas
+## 11. Integracao com LLM
 
-A avaliacao inicial deve verificar se a explicacao:
+`src/tc_fase2/llm_explainer.py` gera explicacoes em portugues claro. A LLM:
 
-- menciona a probabilidade prevista;
-- diferencia risco elevado e sem risco elevado;
-- nao inventa dados ausentes;
-- inclui aviso de seguranca medica;
-- usa linguagem clara.
+- usa apenas dados fornecidos;
+- nao inventa informacoes ausentes;
+- nao afirma diagnostico definitivo;
+- reforca que a saida e apoio a decisao clinica;
+- recomenda avaliacao medica quando houver risco alto;
+- informa que risco baixo pelo modelo nao elimina avaliacao clinica.
 
-## 12. Logging e monitoramento
+## 12. Endpoint `/predict/explain`
 
-Os scripts registram inicio, fim, configuracao, melhor fitness por geracao, metricas relevantes, tempo de execucao e erros relevantes.
+A API original foi preservada e recebeu um endpoint adicional:
 
-Arquivos:
+```text
+POST /predict/explain
+```
+
+Ele recebe o mesmo payload de `/predict`, calcula probabilidade, classe prevista e retorna uma explicacao. Sem chave de API, usa fallback local.
+
+## 13. Exemplo de explicacao
+
+Os exemplos positivo e negativo sao gerados por:
+
+```bash
+python -m src.tc_fase2.llm_explainer --mock
+```
+
+Arquivo:
+
+- `reports/llm_explanation_examples.json`
+
+## 14. Logging e monitoramento
+
+Os logs principais sao:
 
 - `logs/ga_experiments.log`
 - `logs/training.log`
 
-## 13. Testes automatizados
+Eles registram inicio/fim, configuracao, geracao atual, melhor fitness, metricas e tempo de execucao.
 
-Os testes foram criados em `tests/` e podem ser executados com:
+## 15. Testes automatizados
+
+Os testes cobrem GA, metricas, threshold tuning, bloqueio de resultados quick, explicador LLM, script de predicao com explicacao e endpoints da API.
 
 ```bash
 pytest
 ```
 
-Eles cobrem componentes do algoritmo genetico, metricas e explicador LLM.
+## 16. Limitacoes
 
-## 14. Desafios encontrados
+- Base desbalanceada.
+- Possibilidade de muitos falsos positivos em configuracoes muito sensiveis.
+- Resultados quick nao sao resultados finais.
+- Projeto academico, sem validacao clinica real.
+- A LLM nao faz diagnostico.
+- Uso real exigiria avaliacao prospectiva, governanca clinica e monitoramento continuo.
 
-O projeto original concentrava o treinamento no notebook e a API em um unico arquivo. A Fase 2 foi implementada em um novo pacote para preservar o funcionamento original e organizar os scripts reprodutiveis.
+## 17. Conclusao
 
-Outro desafio e o custo computacional dos experimentos com XGBoost em bases grandes. Por isso, foi incluido modo `--quick`.
-
-## 15. Conclusao
-
-A Fase 2 adiciona uma esteira reprodutivel para avaliar baseline, otimizar hiperparametros por Algoritmo Genetico, treinar o modelo final, comparar resultados e gerar explicacoes seguras com LLM ou fallback local. Os resultados finais devem ser preenchidos apos a execucao dos experimentos completos.
+O projeto agora possui pipeline completo para baseline, GA, ajuste de threshold, treino otimizado, comparacao, explicacao por LLM/fallback e relatorio de resultados. Os resultados finais devem ser gerados localmente com os comandos sem `--quick`.

@@ -1,25 +1,25 @@
 {
-  "accuracy": 0.15333333333333332,
-  "recall": 0.9809885931558935,
-  "precision": 0.09237379162191192,
-  "f1_score": 0.168848167539267,
+  "accuracy": 0.228,
+  "recall": 0.9315589353612167,
+  "precision": 0.09634290208415258,
+  "f1_score": 0.17462580185317178,
   "confusion_matrix": [
     [
-      202,
-      2535
+      439,
+      2298
     ],
     [
-      5,
-      258
+      18,
+      245
     ]
   ],
-  "true_negatives": 202,
-  "false_positives": 2535,
-  "false_negatives": 5,
-  "true_positives": 258,
-  "threshold": 0.12,
-  "fitness": 0.5967394441900743,
-  "execution_time_seconds": 7.5321,
+  "true_negatives": 439,
+  "false_positives": 2298,
+  "false_negatives": 18,
+  "true_positives": 245,
+  "threshold": 0.15,
+  "fitness": 0.566632338633401,
+  "execution_time_seconds": 12.7529,
   "hyperparameters": {
     "max_depth": 7,
     "learning_rate": 0.03115,
@@ -31,5 +31,9 @@
     "reg_alpha": 3.5801,
     "reg_lambda": 5.75994
   },
+  "best_threshold": 0.15,
+  "original_threshold": 0.12,
+  "threshold_strategy": "validation_fitness",
+  "threshold_source": "validation_set",
   "quick": true
 }

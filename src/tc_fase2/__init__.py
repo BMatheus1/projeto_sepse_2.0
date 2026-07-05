@@ -5,4 +5,7 @@ __all__ = [
     "metrics",
     "genetic_algorithm",
     "llm_explainer",
+    "predict_and_explain",
+    "threshold_tuning",
+    "update_report_results",
 ]

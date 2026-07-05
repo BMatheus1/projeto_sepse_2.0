@@ -1,17 +1,37 @@
 {
-  "mode": "llm",
-  "probability": 0.72,
-  "predicted_class": 1,
-  "clinical_variables": {
-    "MAP": 58,
-    "Lactate": 3.1,
-    "Resp": 28
+  "examples": {
+    "positive_example": {
+      "mode": "template_fallback",
+      "probability": 0.72,
+      "predicted_class": 1,
+      "clinical_variables": {
+        "MAP": 58,
+        "Lactate": 3.1,
+        "Resp": 28
+      },
+      "influencing_factors": [
+        "MAP baixa",
+        "lactato elevado",
+        "frequencia respiratoria aumentada"
+      ],
+      "prompt": "Voce e um assistente que explica a saida de um modelo preditivo de sepse.\n\nRegras obrigatorias:\n- Responda em portugues claro.\n- Use apenas os dados fornecidos.\n- Nao invente informacoes ausentes.\n- Nao afirme diagnostico definitivo.\n- Explique que o resultado e apoio a decisao clinica.\n- Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.\n- Recomende avaliacao medica quando houver risco alto.\n- Se a classe prevista for 0, explique que risco elevado nao foi identificado pelo modelo, mas isso nao exclui avaliacao clinica.\n\nDados do modelo:\n- Probabilidade prevista de sepse: 0.7200\n- Classe prevista: 1 (risco elevado de sepse)\n\nVariaveis clinicas fornecidas:\n- MAP: 58\n- Lactate: 3.1\n- Resp: 28\n\nFatores que influenciaram a decisao:\n- MAP baixa\n- lactato elevado\n- frequencia respiratoria aumentada\n\nMensagem de seguranca:\nEsta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica.\n\nGere uma explicacao curta, objetiva e segura para uma equipe clinica.",
+      "explanation": "O modelo preditivo estimou probabilidade de sepse de 72.0% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliacao medica imediata conforme protocolo clinico. Os principais fatores informados associados a decisao foram: MAP baixa, lactato elevado, frequencia respiratoria aumentada. As variaveis clinicas consideradas na explicacao incluem: MAP, Lactate, Resp. Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica."
+    },
+    "negative_example": {
+      "mode": "template_fallback",
+      "probability": 0.07,
+      "predicted_class": 0,
+      "clinical_variables": {
+        "MAP": 82,
+        "Temp": 36.8,
+        "Resp": 17
+      },
+      "influencing_factors": [
+        "sinais vitais dentro do esperado no exemplo"
+      ],
+      "prompt": "Voce e um assistente que explica a saida de um modelo preditivo de sepse.\n\nRegras obrigatorias:\n- Responda em portugues claro.\n- Use apenas os dados fornecidos.\n- Nao invente informacoes ausentes.\n- Nao afirme diagnostico definitivo.\n- Explique que o resultado e apoio a decisao clinica.\n- Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.\n- Recomende avaliacao medica quando houver risco alto.\n- Se a classe prevista for 0, explique que risco elevado nao foi identificado pelo modelo, mas isso nao exclui avaliacao clinica.\n\nDados do modelo:\n- Probabilidade prevista de sepse: 0.0700\n- Classe prevista: 0 (sem risco elevado de sepse)\n\nVariaveis clinicas fornecidas:\n- MAP: 82\n- Temp: 36.8\n- Resp: 17\n\nFatores que influenciaram a decisao:\n- sinais vitais dentro do esperado no exemplo\n\nMensagem de seguranca:\nEsta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica.\n\nGere uma explicacao curta, objetiva e segura para uma equipe clinica.",
+      "explanation": "O modelo preditivo estimou probabilidade de sepse de 7.0% e classificou o paciente como sem risco elevado de sepse. O modelo nao identificou risco elevado, mas esse resultado nao exclui avaliacao clinica quando houver sinais, sintomas ou julgamento profissional. Os principais fatores informados associados a decisao foram: sinais vitais dentro do esperado no exemplo. As variaveis clinicas consideradas na explicacao incluem: MAP, Temp, Resp. Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica."
+    }
   },
-  "influencing_factors": [
-    "MAP baixa",
-    "lactato elevado",
-    "frequencia respiratoria aumentada"
-  ],
-  "prompt": "Voce e um assistente que explica a saida de um modelo preditivo de sepse.\n\nRegras obrigatorias:\n- Responda em portugues claro.\n- Use apenas os dados fornecidos.\n- Nao invente informacoes ausentes.\n- Nao afirme diagnostico definitivo.\n- Explique que o resultado e apoio a decisao clinica.\n- Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.\n- Recomende avaliacao medica quando houver risco alto.\n\nDados do modelo:\n- Probabilidade prevista de sepse: 0.7200\n- Classe prevista: 1 (risco elevado de sepse)\n\nVariaveis clinicas fornecidas:\n- MAP: 58\n- Lactate: 3.1\n- Resp: 28\n\nFatores que influenciaram a decisao:\n- MAP baixa\n- lactato elevado\n- frequencia respiratoria aumentada\n\nMensagem de seguranca:\nEsta explicacao e apenas apoio a decisao clinica e nao substitui avaliacao de uma equipe medica.\n\nGere uma explicacao curta, objetiva e segura para uma equipe clinica.",
-  "explanation": "O modelo preditivo estimou probabilidade de sepse de 72.0% e classificou o paciente como risco elevado de sepse. Os principais fatores informados associados a decisao foram: MAP baixa, lactato elevado, frequencia respiratoria aumentada. As variaveis clinicas consideradas na explicacao incluem: MAP, Lactate, Resp. Esta explicacao e apenas apoio a decisao clinica e nao substitui avaliacao de uma equipe medica."
+  "safety_message": "Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica."
 }

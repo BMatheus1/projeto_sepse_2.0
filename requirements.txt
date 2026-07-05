@@ -12,3 +12,4 @@ pyarrow
 matplotlib
 seaborn
 pytest
+openai

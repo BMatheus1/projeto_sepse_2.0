@@ -70,7 +70,7 @@ def extract_model(artifact: Any) -> Any:
 
 def extract_threshold(artifact: Any) -> float:
     if isinstance(artifact, dict):
-        for key in ["threshold_validacao_modelo", "threshold_base"]:
+        for key in ["best_threshold", "threshold_validacao_modelo", "threshold_base"]:
             value = artifact.get(key)
             if value is not None:
                 return float(value)
