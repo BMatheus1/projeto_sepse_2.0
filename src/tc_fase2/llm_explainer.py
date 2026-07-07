@@ -10,8 +10,8 @@ from .config import REPORTS_DIR, ensure_project_dirs
 
 
 SAFETY_MESSAGE = (
-    "Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo "
-    "e nao substitui avaliacao de uma equipe medica."
+    "Esta explicação é apenas apoio à decisão clínica, não é diagnóstico definitivo "
+    "e não substitui avaliação de uma equipe médica."
 )
 
 
@@ -27,18 +27,18 @@ def _class_to_int(predicted_class: int | str) -> int:
 
 def _format_dict(data: Optional[Dict[str, Any]]) -> str:
     if not data:
-        return "Nao informado."
+        return "Não informado."
     lines = []
     for key, value in data.items():
         if value is None or value == "":
             continue
         lines.append(f"- {key}: {value}")
-    return "\n".join(lines) if lines else "Nao informado."
+    return "\n".join(lines) if lines else "Não informado."
 
 
 def _format_list(values: Optional[Iterable[str]]) -> str:
     values = [str(value) for value in values or [] if value]
-    return "\n".join(f"- {value}" for value in values) if values else "Nao informado."
+    return "\n".join(f"- {value}" for value in values) if values else "Não informado."
 
 
 def build_prompt(
@@ -50,32 +50,32 @@ def build_prompt(
 ) -> str:
     class_int = _class_to_int(predicted_class)
     risk_label = "risco elevado de sepse" if class_int == 1 else "sem risco elevado de sepse"
-    return f"""Voce e um assistente que explica a saida de um modelo preditivo de sepse.
+    return f"""Você é um assistente que explica a saída de um modelo preditivo de sepse.
 
-Regras obrigatorias:
-- Responda em portugues claro.
+Regras obrigatórias:
+- Responda em português claro.
 - Use apenas os dados fornecidos.
-- Nao invente informacoes ausentes.
-- Nao afirme diagnostico definitivo.
-- Explique que o resultado e apoio a decisao clinica.
-- Destaque os fatores clinicos mais relevantes quando eles forem fornecidos.
-- Recomende avaliacao medica quando houver risco alto.
-- Se a classe prevista for 0, explique que risco elevado nao foi identificado pelo modelo, mas isso nao exclui avaliacao clinica.
+- Não invente informações ausentes.
+- Não afirme diagnóstico definitivo.
+- Explique que o resultado é apoio à decisão clínica.
+- Destaque os fatores clínicos mais relevantes quando eles forem fornecidos.
+- Recomende avaliação médica quando houver risco alto.
+- Se a classe prevista for 0, explique que risco elevado não foi identificado pelo modelo, mas isso não exclui avaliação clínica.
 
 Dados do modelo:
 - Probabilidade prevista de sepse: {probability:.4f}
 - Classe prevista: {predicted_class} ({risk_label})
 
-Variaveis clinicas fornecidas:
+Variáveis clínicas fornecidas:
 {_format_dict(clinical_variables)}
 
-Fatores que influenciaram a decisao:
+Fatores que influenciaram a decisão:
 {_format_list(influencing_factors)}
 
-Mensagem de seguranca:
+Mensagem de segurança:
 {safety_message}
 
-Gere uma explicacao curta, objetiva e segura para uma equipe clinica."""
+Gere uma explicação curta, objetiva e segura para uma equipe clínica."""
 
 
 def local_template_explanation(
@@ -88,23 +88,23 @@ def local_template_explanation(
     class_int = _class_to_int(predicted_class)
     risk_text = "risco elevado de sepse" if class_int == 1 else "sem risco elevado de sepse"
     if class_int == 1:
-        class_sentence = " Recomenda-se avaliacao medica imediata conforme protocolo clinico."
+        class_sentence = " Recomenda-se avaliação médica imediata conforme protocolo clínico."
     else:
         class_sentence = (
-            " O modelo nao identificou risco elevado, mas esse resultado nao exclui avaliacao clinica "
+            " O modelo não identificou risco elevado, mas esse resultado não exclui avaliação clínica "
             "quando houver sinais, sintomas ou julgamento profissional."
         )
     factors = ", ".join(influencing_factors or [])
     factor_sentence = (
-        f" Os principais fatores informados associados a decisao foram: {factors}."
+        f" Os principais fatores informados associados à decisão foram: {factors}."
         if factors
-        else " Nao foram fornecidos fatores explicativos adicionais."
+        else " Não foram fornecidos fatores explicativos adicionais."
     )
     variable_names = ", ".join((clinical_variables or {}).keys())
     variable_sentence = (
-        f" As variaveis clinicas consideradas na explicacao incluem: {variable_names}."
+        f" As variáveis clínicas consideradas na explicação incluem: {variable_names}."
         if variable_names
-        else " Nao foram fornecidas variaveis clinicas detalhadas para esta explicacao."
+        else " Não foram fornecidas variáveis clínicas detalhadas para esta explicação."
     )
     return (
         f"O modelo preditivo estimou probabilidade de sepse de {probability:.1%} e classificou o paciente como "
@@ -115,11 +115,11 @@ def local_template_explanation(
 def call_llm(prompt: str, model: str = "gpt-4.1-mini") -> str:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("OPENAI_API_KEY nao configurada.")
+        raise RuntimeError("OPENAI_API_KEY não configurada.")
     try:
         from openai import OpenAI
     except Exception as exc:
-        raise RuntimeError("Pacote openai nao instalado. Use o fallback local ou instale openai.") from exc
+        raise RuntimeError("Pacote openai não instalado. Use o fallback local ou instale openai.") from exc
 
     client = OpenAI(api_key=api_key)
     response = client.responses.create(model=model, input=prompt)
@@ -164,12 +164,12 @@ def write_prompt_documentation() -> None:
         probability=0.72,
         predicted_class=1,
         clinical_variables={"MAP": 58, "Lactate": 3.1, "Resp": 28},
-        influencing_factors=["MAP baixa", "lactato elevado", "frequencia respiratoria aumentada"],
+        influencing_factors=["MAP baixa", "lactato elevado", "frequência respiratória aumentada"],
     )
     content = [
         "# Prompt usado para explicacao com LLM",
         "",
-        "O prompt abaixo instrui a LLM a explicar a saida do modelo sem assumir papel diagnostico.",
+        "O prompt abaixo instrui a LLM a explicar a saída do modelo sem assumir papel diagnóstico.",
         "",
         "```text",
         example_prompt,
@@ -185,7 +185,7 @@ def save_example() -> Dict[str, Any]:
             probability=0.72,
             predicted_class=1,
             clinical_variables={"MAP": 58, "Lactate": 3.1, "Resp": 28},
-            influencing_factors=["MAP baixa", "lactato elevado", "frequencia respiratoria aumentada"],
+            influencing_factors=["MAP baixa", "lactato elevado", "frequência respiratória aumentada"],
             use_llm=bool(os.getenv("OPENAI_API_KEY")),
         ),
         "negative_example": generate_explanation(
@@ -209,8 +209,8 @@ def save_example() -> Dict[str, Any]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Gera exemplo de explicacao em linguagem natural.")
-    parser.add_argument("--mock", action="store_true", help="Forca o fallback local.")
+    parser = argparse.ArgumentParser(description="Gera exemplo de explicação em linguagem natural.")
+    parser.add_argument("--mock", action="store_true", help="Força o fallback local.")
     return parser.parse_args()
 
 
