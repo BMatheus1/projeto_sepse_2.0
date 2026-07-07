@@ -1,0 +1,28 @@
+{
+  "best_threshold": 0.5,
+  "threshold_strategy": "validation_fitness",
+  "threshold_source": "validation_set",
+  "fitness_formula": "recall * 0.50 + f1_score * 0.35 + precision * 0.10 - fn_penalty * 0.05",
+  "metrics": {
+    "accuracy": 1.0,
+    "recall": 1.0,
+    "precision": 1.0,
+    "f1_score": 1.0,
+    "confusion_matrix": [
+      [
+        2,
+        0
+      ],
+      [
+        0,
+        2
+      ]
+    ],
+    "true_negatives": 2,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_positives": 2,
+    "threshold": 0.5,
+    "fitness": 0.95
+  }
+}
