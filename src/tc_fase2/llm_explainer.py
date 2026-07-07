@@ -167,7 +167,7 @@ def write_prompt_documentation() -> None:
         influencing_factors=["MAP baixa", "lactato elevado", "frequência respiratória aumentada"],
     )
     content = [
-        "# Prompt usado para explicacao com LLM",
+        "# Prompt usado para explicação com LLM",
         "",
         "O prompt abaixo instrui a LLM a explicar a saída do modelo sem assumir papel diagnóstico.",
         "",

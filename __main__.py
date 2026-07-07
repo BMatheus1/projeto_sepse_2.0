@@ -14,7 +14,9 @@ import uvicorn
 
 ROOT = Path(__file__).resolve().parent
 
-MODEL_PATH = ROOT / "modelos_salvos" / "modelo_sepse_sem_tempo_admin.pkl"
+ORIGINAL_MODEL_PATH = ROOT / "modelos_salvos" / "modelo_sepse_sem_tempo_admin.pkl"
+OPTIMIZED_MODEL_PATH = ROOT / "models" / "optimized_model.pkl"
+MODEL_PATH = OPTIMIZED_MODEL_PATH if OPTIMIZED_MODEL_PATH.exists() else ORIGINAL_MODEL_PATH
 FEATURES_PATH = ROOT / "data" / "processed" / "features_modelo_sem_tempo_admin.csv"
 MEDIANAS_PATH = ROOT / "data" / "processed" / "medianas_treino_sem_tempo_admin.csv"
 
@@ -107,7 +109,7 @@ def extrair_modelo(artefato: Any) -> Any:
 
 def extrair_threshold_padrao(artefato: Any) -> float:
     if isinstance(artefato, dict):
-        for chave in ["threshold_validacao_modelo", "threshold_base"]:
+        for chave in ["best_threshold", "threshold_validacao_modelo", "threshold_base"]:
             valor = artefato.get(chave)
             if valor is not None:
                 try:
@@ -361,6 +363,8 @@ def health():
         "medianas_carregadas": len(medianas),
         "threshold_padrao_modelo": threshold_padrao_modelo,
         "caminho_modelo": str(MODEL_PATH),
+        "caminho_modelo_original": str(ORIGINAL_MODEL_PATH),
+        "caminho_modelo_otimizado": str(OPTIMIZED_MODEL_PATH),
         "caminho_features_csv": str(FEATURES_PATH),
         "caminho_medianas_csv": str(MEDIANAS_PATH),
     }

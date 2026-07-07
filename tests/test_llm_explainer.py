@@ -11,8 +11,8 @@ def test_prompt_contains_required_data():
     assert "0.8100" in prompt
     assert "MAP" in prompt
     assert "Lactate" in prompt
-    assert "Nao invente" in prompt
-    assert "apoio a decisao clinica" in prompt
+    assert "Não invente" in prompt
+    assert "apoio à decisão clínica" in prompt
 
 
 def test_local_fallback_works_without_api_key(monkeypatch):
@@ -21,17 +21,17 @@ def test_local_fallback_works_without_api_key(monkeypatch):
         probability=0.66,
         predicted_class=1,
         clinical_variables={"Resp": 30},
-        influencing_factors=["frequencia respiratoria aumentada"],
+        influencing_factors=["frequência respiratória aumentada"],
         use_llm=True,
     )
     assert result["mode"] == "template_fallback"
-    assert "nao substitui avaliacao" in result["explanation"]
+    assert "não substitui avaliação" in result["explanation"]
 
 
 def test_template_does_not_invent_missing_factors():
     text = local_template_explanation(probability=0.2, predicted_class=0)
-    assert "Nao foram fornecidos fatores" in text
-    assert "nao exclui avaliacao clinica" in text
+    assert "Não foram fornecidos fatores" in text
+    assert "não exclui avaliação clínica" in text
 
 
 def test_save_example_generates_positive_and_negative(monkeypatch):
