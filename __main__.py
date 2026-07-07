@@ -258,19 +258,19 @@ def selecionar_fatores_simples(variaveis: Dict[str, Any]) -> List[str]:
     fatores = []
     try:
         if "MAP" in variaveis and float(variaveis["MAP"]) < 65:
-            fatores.append("pressao arterial media baixa")
+            fatores.append("pressão arterial média baixa")
         if "Lactate" in variaveis and float(variaveis["Lactate"]) >= 2:
             fatores.append("lactato elevado")
         if "Resp" in variaveis and float(variaveis["Resp"]) >= 22:
-            fatores.append("frequencia respiratoria aumentada")
+            fatores.append("frequência respiratória aumentada")
         if "Temp" in variaveis and (float(variaveis["Temp"]) >= 38 or float(variaveis["Temp"]) < 36):
             fatores.append("temperatura alterada")
         if "WBC" in variaveis and (float(variaveis["WBC"]) >= 12 or float(variaveis["WBC"]) < 4):
-            fatores.append("leucocitos alterados")
+            fatores.append("leucócitos alterados")
         if "HR" in variaveis and float(variaveis["HR"]) >= 100:
-            fatores.append("frequencia cardiaca elevada")
+            fatores.append("frequência cardíaca elevada")
     except Exception as exc:
-        logger.warning("Erro ao selecionar fatores clinicos simples: %s", exc)
+        logger.warning("Erro ao selecionar fatores clínicos simples: %s", exc)
     return fatores
 
 
@@ -296,13 +296,13 @@ def gerar_explicacao_segura(
             "modo_explicacao": str(resultado["mode"]),
         }
     except Exception as exc:
-        logger.warning("Fallback local de explicacao acionado: %s", exc)
+        logger.warning("Fallback local de explicação acionado: %s", exc)
         classe = "risco elevado de sepse" if predicao == 1 else "sem risco elevado de sepse"
         return {
             "explicacao": (
                 f"O modelo estimou probabilidade de sepse de {probabilidade:.1%} e classificou o caso como "
-                f"{classe}. Esta explicacao usa apenas dados fornecidos, nao e diagnostico definitivo "
-                "e nao substitui avaliacao medica."
+                f"{classe}. Esta explicação usa apenas dados fornecidos, não é diagnóstico definitivo "
+                "e não substitui avaliação médica."
             ),
             "modo_explicacao": "api_template_fallback",
         }

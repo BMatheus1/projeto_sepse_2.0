@@ -154,6 +154,8 @@ Endpoints:
 - `POST /predict/explain`
 - `POST /reload`
 
+A API tenta carregar primeiro `models/optimized_model.pkl`. Caso esse arquivo não esteja disponível, utiliza o modelo original em `modelos_salvos/`.
+
 ## Endpoint com explicação
 
 `POST /predict/explain` recebe o mesmo payload de `/predict` e retorna:

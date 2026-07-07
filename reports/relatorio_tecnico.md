@@ -134,14 +134,18 @@ Arquivo:
 
 - `reports/llm_explanation_examples.json`
 
-## 14. Logging e monitoramento
+## 14. Escalabilidade, logging e monitoramento
+
+Esta versão acadêmica não implementa escalabilidade automática em nuvem. No entanto, a solução foi estruturada de forma modular, com API FastAPI, Dockerfile, scripts independentes e separação entre dados, modelos, relatórios e testes, permitindo implantação futura em serviços como Render, AWS, Azure ou GCP.
+
+O monitoramento local foi implementado por meio de logs dos experimentos e do treinamento, incluindo início e fim das execuções, configurações utilizadas, métricas, melhor fitness, recall, F1-score, falsos negativos, falsos positivos e tempo de execução.
+
+Assim, a parte de logging e tracking de desempenho foi contemplada no ambiente local, enquanto a escalabilidade automática fica documentada como possibilidade de evolução futura.
 
 Os logs principais são:
 
 - `logs/ga_experiments.log`
 - `logs/training.log`
-
-Eles registram início/fim, configuração, geração atual, melhor fitness, métricas e tempo de execução.
 
 ## 15. Testes automatizados
 

@@ -1,3 +1,0 @@
-﻿accuracy,recall,precision,f1_score,confusion_matrix,true_negatives,false_positives,false_negatives,true_positives,threshold,fitness
-1.0,1.0,1.0,1.0,"[[2, 0], [0, 2]]",2,0,0,2,0.5,0.95
-0.75,1.0,0.6666666666666666,0.8,"[[1, 1], [0, 2]]",1,1,0,2,0.1,0.8466666666666667
