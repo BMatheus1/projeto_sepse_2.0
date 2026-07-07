@@ -1,39 +1,39 @@
 {
-  "accuracy": 0.228,
-  "recall": 0.9315589353612167,
-  "precision": 0.09634290208415258,
-  "f1_score": 0.17462580185317178,
+  "accuracy": 0.24004225749512792,
+  "recall": 0.9251697654419833,
+  "precision": 0.09804442237711254,
+  "f1_score": 0.17729960419502133,
   "confusion_matrix": [
     [
-      439,
-      2298
+      120512,
+      574037
     ],
     [
-      18,
-      245
+      5047,
+      62399
     ]
   ],
-  "true_negatives": 439,
-  "false_positives": 2298,
-  "false_negatives": 18,
-  "true_positives": 245,
+  "true_negatives": 120512,
+  "false_positives": 574037,
+  "false_negatives": 5047,
+  "true_positives": 62399,
   "threshold": 0.15,
-  "fitness": 0.566632338633401,
-  "execution_time_seconds": 12.7529,
+  "fitness": 0.5634152090055466,
+  "execution_time_seconds": 479.6475,
   "hyperparameters": {
-    "max_depth": 7,
-    "learning_rate": 0.03115,
-    "n_estimators": 127,
-    "subsample": 0.68746,
-    "colsample_bytree": 0.80214,
-    "min_child_weight": 1,
-    "gamma": 2.80623,
-    "reg_alpha": 3.5801,
-    "reg_lambda": 5.75994
+    "max_depth": 6,
+    "learning_rate": 0.03278,
+    "n_estimators": 371,
+    "subsample": 0.69849,
+    "colsample_bytree": 0.82084,
+    "min_child_weight": 3,
+    "gamma": 2.79547,
+    "reg_alpha": 2.1911,
+    "reg_lambda": 3.96307
   },
   "best_threshold": 0.15,
   "original_threshold": 0.12,
   "threshold_strategy": "validation_fitness",
   "threshold_source": "validation_set",
-  "quick": true
+  "quick": false
 }

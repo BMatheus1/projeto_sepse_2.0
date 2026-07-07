@@ -1,32 +1,29 @@
 # Complemento de resultados
 
-> Aviso: ha resultados marcados como `quick=True`. Eles servem para validacao tecnica do fluxo e nao devem ser usados como resultado final da entrega.
-> Para resultados finais, execute os comandos sem `--quick`.
-
 ## Baseline
 
 | metrica | valor |
 | --- | --- |
-| accuracy | 0.6618 |
-| recall | 0.5590200445434298 |
-| precision | 0.14392201834862386 |
-| f1_score | 0.22891016871865025 |
-| false_negatives | 198 |
-| false_positives | 1493 |
+| accuracy | 0.6503349759512858 |
+| recall | 0.5480532574207514 |
+| precision | 0.13543647522213062 |
+| f1_score | 0.21719829245147207 |
+| false_negatives | 30482 |
+| false_positives | 235961 |
 
 ## Experimentos GA
 
 | experiment | population_size | generations | mutation_rate | quick | execution_time_seconds | best_fitness | best_hyperparameters | accuracy | recall | precision | f1_score | false_negatives | false_positives | threshold |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 4 | 2 | 0.1 | True | 17.2934 | 0.6332465277777778 | {'max_depth': 7, 'learning_rate': 0.03115, 'n_estimators': 127, 'subsample': 0.68746, 'colsample_bytree': 0.80214, 'min_child_weight': 1, 'gamma': 2.80623, 'reg_alpha': 3.5801, 'reg_lambda': 5.75994} | 0.2683333333333333 | 1.0 | 0.134975369458128 | 0.2378472222222222 | 0 | 878 | 0.12 |
-| 2 | 5 | 2 | 0.2 | True | 20.6808 | 0.6268321668261624 | {'max_depth': 4, 'learning_rate': 0.03115, 'n_estimators': 220, 'subsample': 0.69796, 'colsample_bytree': 0.9512, 'min_child_weight': 1, 'gamma': 2.42995, 'reg_alpha': 3.80301, 'reg_lambda': 1.15204} | 0.2541666666666666 | 0.9927007299270072 | 0.1320388349514563 | 0.2330762639245929 | 1 | 894 | 0.12 |
-| 3 | 6 | 2 | 0.3 | True | 19.2719 | 0.6271831852959283 | {'max_depth': 2, 'learning_rate': 0.17576, 'n_estimators': 127, 'subsample': 0.81572, 'colsample_bytree': 0.80214, 'min_child_weight': 5, 'gamma': 4.33242, 'reg_alpha': 3.5801, 'reg_lambda': 5.75994} | 0.2583333333333333 | 0.9927007299270072 | 0.1326829268292683 | 0.2340791738382099 | 1 | 889 | 0.12 |
+| 1 | 10 | 5 | 0.1 | False | 38369.8118 | 0.6353623176672581 | {'max_depth': 7, 'learning_rate': 0.03115, 'n_estimators': 220, 'subsample': 0.69796, 'colsample_bytree': 0.94772, 'min_child_weight': 2, 'gamma': 3.4907, 'reg_alpha': 2.66373, 'reg_lambda': 1.15204} | 0.2176058329928659 | 0.994956398774452 | 0.145096098325497 | 0.2532590241824693 | 107 | 124368 | 0.12 |
+| 2 | 20 | 8 | 0.2 | False | 22851.4065 | 0.6353665540585001 | {'max_depth': 5, 'learning_rate': 0.05188, 'n_estimators': 333, 'subsample': 0.86305, 'colsample_bytree': 0.76662, 'min_child_weight': 1, 'gamma': 1.16312, 'reg_alpha': 0.82961, 'reg_lambda': 5.9541} | 0.2326220182909582 | 0.9931652132924818 | 0.1473313241638755 | 0.2565976154811053 | 145 | 121941 | 0.12 |
+| 3 | 30 | 10 | 0.3 | False | 173956.4061 | 0.6357576428258713 | {'max_depth': 6, 'learning_rate': 0.03278, 'n_estimators': 371, 'subsample': 0.69849, 'colsample_bytree': 0.82084, 'min_child_weight': 3, 'gamma': 2.79547, 'reg_alpha': 2.1911, 'reg_lambda': 3.96307} | 0.2351676671171312 | 0.993400895592741 | 0.1477744432602232 | 0.2572773162588277 | 140 | 121541 | 0.12 |
 
 ### Melhor experimento
 
-- Experimento: 1
-- Fitness: 0.6332465277777778
-- Hiperparametros: `{'max_depth': 7, 'learning_rate': 0.03115, 'n_estimators': 127, 'subsample': 0.68746, 'colsample_bytree': 0.80214, 'min_child_weight': 1, 'gamma': 2.80623, 'reg_alpha': 3.5801, 'reg_lambda': 5.75994}`
+- Experimento: 3
+- Fitness: 0.6357576428258713
+- Hiperparametros: `{'max_depth': 6, 'learning_rate': 0.03278, 'n_estimators': 371, 'subsample': 0.69849, 'colsample_bytree': 0.82084, 'min_child_weight': 3, 'gamma': 2.79547, 'reg_alpha': 2.1911, 'reg_lambda': 3.96307}`
 
 ## Threshold escolhido
 
@@ -38,21 +35,41 @@
 
 | metrica | valor |
 | --- | --- |
-| accuracy | 0.228 |
-| recall | 0.9315589353612167 |
-| precision | 0.09634290208415258 |
-| f1_score | 0.17462580185317178 |
-| false_negatives | 18 |
-| false_positives | 2298 |
+| accuracy | 0.24004225749512792 |
+| recall | 0.9251697654419833 |
+| precision | 0.09804442237711254 |
+| f1_score | 0.17729960419502133 |
+| false_negatives | 5047 |
+| false_positives | 574037 |
 
 ## Comparacao
 
 # Comparacao entre modelo original e otimizado
 
+## Metricas
+
 | model | accuracy | recall | precision | f1_score | false_negatives | false_positives |
 | --- | --- | --- | --- | --- | --- | --- |
-| baseline_original | 0.6618 | 0.5590200445434298 | 0.14392201834862386 | 0.22891016871865025 | 198 | 1493 |
-| modelo_otimizado_ga | 0.15333333333333332 | 0.9809885931558935 | 0.09237379162191192 | 0.168848167539267 | 5 | 2535 |
+| baseline_original | 0.6503349759512858 | 0.5480532574207514 | 0.13543647522213062 | 0.21719829245147207 | 30482 | 235961 |
+| modelo_otimizado_ga | 0.24004225749512792 | 0.9251697654419833 | 0.09804442237711254 | 0.17729960419502133 | 5047 | 574037 |
+
+## Diferencas absolutas
+
+| metric | baseline | optimized | absolute_difference |
+| --- | --- | --- | --- |
+| recall | 0.5480532574207514 | 0.9251697654419833 | 0.37711650802123187 |
+| precision | 0.13543647522213062 | 0.09804442237711254 | -0.03739205284501808 |
+| f1_score | 0.21719829245147207 | 0.17729960419502133 | -0.03989868825645074 |
+| false_negatives | 30482.0 | 5047.0 | -25435.0 |
+| false_positives | 235961.0 | 574037.0 | 338076.0 |
+
+## Analise automatica
+
+- Falsos negativos cairam em 25435, indicando ganho de sensibilidade.
+- Falsos positivos subiram em 338076, gerando mais alertas falsos e possivel custo operacional.
+- Precision caiu; isso evidencia o trade-off de ampliar sensibilidade aceitando mais alertas falsos.
+- Em sepse, recall e reducao de falsos negativos sao mais criticos do que accuracy isolada.
+- Este modelo e academico e deve ser usado apenas como apoio, nunca como diagnostico definitivo.
 
 Em contexto medico, accuracy isolada nao e suficiente para avaliar um modelo de triagem de sepse.
 A prioridade clinica deste projeto e aumentar recall e reduzir falsos negativos, pois um falso negativo pode classificar um paciente com risco de sepse como sem risco.
