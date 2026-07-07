@@ -2,7 +2,7 @@
 
 ## Baseline
 
-| metrica | valor |
+| métrica | valor |
 | --- | --- |
 | accuracy | 0.6503349759512858 |
 | recall | 0.5480532574207514 |
@@ -11,7 +11,7 @@
 | false_negatives | 30482 |
 | false_positives | 235961 |
 
-## Experimentos GA
+## Experimentos do AG
 
 | experiment | population_size | generations | mutation_rate | quick | execution_time_seconds | best_fitness | best_hyperparameters | accuracy | recall | precision | f1_score | false_negatives | false_positives | threshold |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -23,17 +23,17 @@
 
 - Experimento: 3
 - Fitness: 0.6357576428258713
-- Hiperparametros: `{'max_depth': 6, 'learning_rate': 0.03278, 'n_estimators': 371, 'subsample': 0.69849, 'colsample_bytree': 0.82084, 'min_child_weight': 3, 'gamma': 2.79547, 'reg_alpha': 2.1911, 'reg_lambda': 3.96307}`
+- Hiperparâmetros: `{'max_depth': 6, 'learning_rate': 0.03278, 'n_estimators': 371, 'subsample': 0.69849, 'colsample_bytree': 0.82084, 'min_child_weight': 3, 'gamma': 2.79547, 'reg_alpha': 2.1911, 'reg_lambda': 3.96307}`
 
 ## Threshold escolhido
 
 - Best threshold: 0.15
-- Estrategia: validation_fitness
+- Estratégia: validation_fitness
 - Fonte: validation_set
 
 ## Modelo otimizado
 
-| metrica | valor |
+| métrica | valor |
 | --- | --- |
 | accuracy | 0.24004225749512792 |
 | recall | 0.9251697654419833 |
@@ -42,18 +42,18 @@
 | false_negatives | 5047 |
 | false_positives | 574037 |
 
-## Comparacao
+## Comparação
 
-# Comparacao entre modelo original e otimizado
+# Comparação entre modelo original e otimizado
 
-## Metricas
+## Métricas
 
 | model | accuracy | recall | precision | f1_score | false_negatives | false_positives |
 | --- | --- | --- | --- | --- | --- | --- |
 | baseline_original | 0.6503349759512858 | 0.5480532574207514 | 0.13543647522213062 | 0.21719829245147207 | 30482 | 235961 |
 | modelo_otimizado_ga | 0.24004225749512792 | 0.9251697654419833 | 0.09804442237711254 | 0.17729960419502133 | 5047 | 574037 |
 
-## Diferencas absolutas
+## Diferenças absolutas
 
 | metric | baseline | optimized | absolute_difference |
 | --- | --- | --- | --- |
@@ -63,21 +63,21 @@
 | false_negatives | 30482.0 | 5047.0 | -25435.0 |
 | false_positives | 235961.0 | 574037.0 | 338076.0 |
 
-## Analise automatica
+## Análise automática
 
-- Falsos negativos cairam em 25435, indicando ganho de sensibilidade.
-- Falsos positivos subiram em 338076, gerando mais alertas falsos e possivel custo operacional.
+- Falsos negativos caíram em 25435, indicando ganho de sensibilidade.
+- Falsos positivos subiram em 338076, gerando mais alertas falsos e possível custo operacional.
 - Precision caiu; isso evidencia o trade-off de ampliar sensibilidade aceitando mais alertas falsos.
-- Em sepse, recall e reducao de falsos negativos sao mais criticos do que accuracy isolada.
-- Este modelo e academico e deve ser usado apenas como apoio, nunca como diagnostico definitivo.
+- Em sepse, recall e redução de falsos negativos são mais críticos do que accuracy isolada.
+- Este modelo é acadêmico e deve ser usado apenas como apoio, nunca como diagnóstico definitivo.
 
-Em contexto medico, accuracy isolada nao e suficiente para avaliar um modelo de triagem de sepse.
-A prioridade clinica deste projeto e aumentar recall e reduzir falsos negativos, pois um falso negativo pode classificar um paciente com risco de sepse como sem risco.
-O modelo otimizado deve ser interpretado como ferramenta academica de apoio a decisao clinica, nunca como diagnostico definitivo.
+Em contexto médico, accuracy isolada não é suficiente para avaliar um modelo de triagem de sepse.
+A prioridade clínica deste projeto é aumentar recall e reduzir falsos negativos, pois um falso negativo pode classificar um paciente com risco de sepse como sem risco.
+O modelo otimizado deve ser interpretado como ferramenta acadêmica de apoio à decisão clínica, nunca como diagnóstico definitivo.
 
-## Exemplo de explicacao
+## Exemplo de explicação
 
 - Modo: template_fallback
 - Classe prevista: 1
 
-O modelo preditivo estimou probabilidade de sepse de 72.0% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliacao medica imediata conforme protocolo clinico. Os principais fatores informados associados a decisao foram: MAP baixa, lactato elevado, frequencia respiratoria aumentada. As variaveis clinicas consideradas na explicacao incluem: MAP, Lactate, Resp. Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica.
+O modelo preditivo estimou probabilidade de sepse de 72.0% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliação médica imediata conforme protocolo clínico. Os principais fatores informados associados à decisão foram: MAP baixa, lactato elevado, frequência respiratória aumentada. As variáveis clínicas consideradas na explicação incluem: MAP, Lactate, Resp. Esta explicação é apenas apoio à decisão clínica, não é diagnóstico definitivo e não substitui avaliação de uma equipe médica.

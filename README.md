@@ -27,6 +27,21 @@ Este projeto não substitui avaliação médica. A LLM apenas explica a saída d
     `-- update_report_results.py
 ```
 
+## Arquitetura da solução
+
+```mermaid
+flowchart TD
+    A[Dados processados da Fase 1] --> B[Modelo original]
+    A --> C[Algoritmo Genético]
+    C --> D[Melhores hiperparâmetros]
+    D --> E[Ajuste de threshold em validação]
+    E --> F[Modelo otimizado]
+    F --> G[Comparação de métricas]
+    F --> H[Predição com explicação]
+    H --> I[LLM ou fallback local]
+    G --> J[Relatórios e notebook]
+```
+
 ## Ambiente
 
 ```bash
@@ -103,19 +118,25 @@ A fórmula documentada é:
 fitness = recall * 0.50 + f1_score * 0.35 + precision * 0.10 - fn_penalty * 0.05
 ```
 
-O teste nunca e usado para escolher threshold.
+O teste nunca é usado para escolher threshold.
 
-## Interpretacao dos resultados
+## Interpretação dos resultados
 
 Em sepse, recall e falsos negativos são mais importantes que accuracy isolada. Um falso negativo pode deixar de sinalizar um paciente em risco.
 
-O trade-off esperado e:
+O trade-off esperado é:
 
 - recall maior tende a reduzir falsos negativos;
-- falsos positivos podem subir quando o modelo fica mais sensivel;
+- falsos positivos podem subir quando o modelo fica mais sensível;
 - precision pode cair se houver muitos alertas falsos;
-- F1-score ajuda a observar equilíbrio entre precision e recall;
+- F1-score ajuda a observar o equilíbrio entre precision e recall;
 - a decisão final sempre depende de avaliação clínica.
+
+## Escalabilidade e uso operacional
+
+A solução foi organizada em módulos para facilitar manutenção e evolução. Em um cenário operacional, a API pode carregar o modelo otimizado salvo em `models/optimized_model.pkl`, aplicar o threshold ajustado em validação e expor a predição por meio dos endpoints `/predict` e `/predict/explain`.
+
+Para uso real, ainda seriam necessários governança clínica, validação externa, monitoramento contínuo de desempenho, controle de drift dos dados e auditoria das explicações geradas pela LLM ou pelo fallback local.
 
 ## API
 
@@ -133,7 +154,7 @@ Endpoints:
 - `POST /predict/explain`
 - `POST /reload`
 
-## Endpoint com explicacao
+## Endpoint com explicação
 
 `POST /predict/explain` recebe o mesmo payload de `/predict` e retorna:
 
