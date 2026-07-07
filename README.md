@@ -1,8 +1,8 @@
-# Deteccao de Sepse com Machine Learning - Tech Challenge Fase 2
+# Detecção de Sepse com Machine Learning - Tech Challenge Fase 2
 
-Projeto academico para apoio a triagem de risco de sepse. A Fase 2 evolui a base da Fase 1 com otimizacao de hiperparametros por Algoritmo Genetico, ajuste de threshold em validacao e explicacoes em linguagem natural com LLM ou fallback local.
+Projeto acadêmico para apoio à triagem de risco de sepse. A Fase 2 evolui a base da Fase 1 com otimização de hiperparâmetros por Algoritmo Genético, ajuste de threshold em validação e explicações em linguagem natural com LLM ou fallback local.
 
-Este projeto nao substitui avaliacao medica. A LLM apenas explica a saida do modelo preditivo e nao emite diagnostico definitivo.
+Este projeto não substitui avaliação médica. A LLM apenas explica a saída do modelo preditivo e não emite diagnóstico definitivo.
 
 ## Estrutura
 
@@ -12,7 +12,7 @@ Este projeto nao substitui avaliacao medica. A LLM apenas explica a saida do mod
 |-- data/processed/                     # dados processados da Fase 1
 |-- modelos_salvos/                     # modelo original
 |-- models/                             # modelo otimizado
-|-- reports/                            # metricas, graficos e relatorios
+|-- reports/                            # métricas, gráficos e relatórios
 |-- logs/                               # logs
 |-- tests/                              # testes automatizados
 `-- src/tc_fase2/
@@ -43,9 +43,9 @@ PowerShell:
 $env:OPENAI_API_KEY="sua_chave"
 ```
 
-## Execucao rapida de teste
+## Execução rápida de teste
 
-Use apenas para validar o fluxo tecnico. Resultados `quick=True` nao devem ser usados como resultado final da entrega.
+Use apenas para validar o fluxo técnico. Resultados `quick=True` não devem ser usados como resultado final da entrega.
 
 ```bash
 python -m src.tc_fase2.train_baseline --quick
@@ -57,9 +57,9 @@ python -m src.tc_fase2.predict_and_explain
 pytest
 ```
 
-O treino otimizado bloqueia automaticamente hiperparametros vindos de `quick=True` quando `--allow-quick-results` nao e informado.
+O treino otimizado bloqueia automaticamente hiperparâmetros vindos de `quick=True` quando `--allow-quick-results` não é informado.
 
-## Execucao final
+## Execução final
 
 Use estes comandos para gerar resultados finais completos:
 
@@ -74,7 +74,7 @@ python -m src.tc_fase2.update_report_results
 pytest
 ```
 
-Saidas principais:
+Saídas principais:
 
 - `reports/baseline_metrics.json`
 - `reports/ga_experiments_summary.csv`
@@ -88,16 +88,16 @@ Saidas principais:
 
 ## Ajuste de threshold
 
-O modelo otimizado nao aplica diretamente um threshold fixo no teste. O script `train_optimized_model.py`:
+O modelo otimizado não aplica diretamente um threshold fixo no teste. O script `train_optimized_model.py`:
 
 1. treina um modelo com treino;
-2. calcula probabilidades na validacao;
+2. calcula probabilidades na validação;
 3. testa thresholds de `0.05` a `0.50`;
 4. escolhe o melhor por fitness;
-5. treina o modelo final com treino + validacao;
+5. treina o modelo final com treino + validação;
 6. aplica o threshold escolhido ao teste.
 
-A formula documentada e:
+A fórmula documentada é:
 
 ```text
 fitness = recall * 0.50 + f1_score * 0.35 + precision * 0.10 - fn_penalty * 0.05
@@ -107,15 +107,15 @@ O teste nunca e usado para escolher threshold.
 
 ## Interpretacao dos resultados
 
-Em sepse, recall e falsos negativos sao mais importantes que accuracy isolada. Um falso negativo pode deixar de sinalizar um paciente em risco.
+Em sepse, recall e falsos negativos são mais importantes que accuracy isolada. Um falso negativo pode deixar de sinalizar um paciente em risco.
 
 O trade-off esperado e:
 
 - recall maior tende a reduzir falsos negativos;
 - falsos positivos podem subir quando o modelo fica mais sensivel;
 - precision pode cair se houver muitos alertas falsos;
-- F1-score ajuda a observar equilibrio entre precision e recall;
-- a decisao final sempre depende de avaliacao clinica.
+- F1-score ajuda a observar equilíbrio entre precision e recall;
+- a decisão final sempre depende de avaliação clínica.
 
 ## API
 
@@ -144,7 +144,7 @@ Endpoints:
 - `explicacao`
 - `modo_explicacao`
 
-Sem `OPENAI_API_KEY`, a explicacao usa template local seguro.
+Sem `OPENAI_API_KEY`, a explicação usa template local seguro.
 
 ## Exemplo de payload
 
@@ -162,11 +162,27 @@ Sem `OPENAI_API_KEY`, a explicacao usa template local seguro.
 }
 ```
 
-Features ausentes sao preenchidas com medianas do treino quando disponiveis.
+Features ausentes são preenchidas com medianas do treino quando disponíveis.
 
-## Relatorios
+## Relatórios
 
-- `reports/relatorio_tecnico.md`: relatorio tecnico inicial.
-- `reports/relatorio_resultados.md`: complemento gerado automaticamente com metricas disponiveis.
+- `reports/relatorio_tecnico.md`: relatório técnico inicial.
+- `reports/relatorio_resultados.md`: complemento gerado automaticamente com métricas disponíveis.
 
-Se os CSV/JSON atuais estiverem marcados com `quick=True`, eles representam apenas validacao tecnica. Rode a execucao final para preencher metricas finais reais.
+Se os CSV/JSON atuais estiverem marcados com `quick=True`, eles representam apenas validação técnica. Rode a execução final para preencher métricas finais reais.
+
+## Notebook da Fase 2
+
+O notebook novo está em `notebook/tech_challenge_fase2_resultados.ipynb`.
+
+Ele apresenta os resultados finais da Fase 2 e não executa treinamento pesado. Também não roda novamente o Algoritmo Genético. O objetivo é carregar os arquivos da pasta `reports/` e apresentar a análise de forma visual, didática e adequada para revisão da banca.
+
+O notebook contém tabelas, explicações em Markdown e gráficos simples em `matplotlib` para facilitar o entendimento de:
+
+- baseline da Fase 1;
+- três experimentos do Algoritmo Genético;
+- melhor experimento e hiperparâmetros;
+- ajuste de threshold em validação;
+- comparação entre modelo original e modelo otimizado;
+- trade-off entre recall, falsos negativos, falsos positivos, precision e F1-score;
+- exemplos de explicação com LLM ou fallback local.

@@ -1,7 +1,11 @@
 .venv/
 __pycache__/
 .pytest_cache/
+.tmp_pytest/
 *.pyc
+.env
+.env.local
+.ipynb_checkpoints/
 logs/*.log
 models/*.pkl
 reports/*.png

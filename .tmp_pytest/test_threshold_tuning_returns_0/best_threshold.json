@@ -1,4 +1,4 @@
-{
+﻿{
   "best_threshold": 0.5,
   "threshold_strategy": "validation_fitness",
   "threshold_source": "validation_set",
