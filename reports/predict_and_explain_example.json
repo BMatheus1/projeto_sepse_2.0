@@ -1,6 +1,6 @@
 {
   "artifact_source": "optimized",
-  "artifact_path": "C:\\Users\\Mathe\\OneDrive\\Área de Trabalho\\projects\\projeto_sepse_2.0\\models\\optimized_model.pkl",
+  "artifact_path": "C:\\Users\\Mathe\\Área de Trabalho\\projects\\projeto_sepse_2.0\\models\\optimized_model.pkl",
   "probability": 0.6151970624923706,
   "threshold": 0.15,
   "predicted_class": 1,
