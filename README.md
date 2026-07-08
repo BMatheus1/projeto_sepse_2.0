@@ -209,3 +209,8 @@ O notebook contém tabelas, explicações em Markdown e gráficos simples em `ma
 - comparação entre modelo original e modelo otimizado;
 - trade-off entre recall, falsos negativos, falsos positivos, precision e F1-score;
 - exemplos de explicação com LLM ou fallback local.
+
+## Autor e portfólio
+
+### Github: https://github.com/BMatheus1/projeto_sepse_2.0
+### Youtube: https://www.youtube.com/watch?v=yUAQ6P2zKBM
