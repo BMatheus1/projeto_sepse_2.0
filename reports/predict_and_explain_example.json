@@ -22,5 +22,5 @@
     "frequencia cardiaca elevada"
   ],
   "explanation_mode": "template_fallback",
-  "explanation": "O modelo preditivo estimou probabilidade de sepse de 61.5% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliacao medica imediata conforme protocolo clinico. Os principais fatores informados associados a decisao foram: pressao arterial media baixa, lactato elevado, frequencia respiratoria aumentada, temperatura alterada, leucocitos alterados, frequencia cardiaca elevada. As variaveis clinicas consideradas na explicacao incluem: MAP, Lactate, Resp, Temp, WBC, HR. Esta explicacao e apenas apoio a decisao clinica, nao e diagnostico definitivo e nao substitui avaliacao de uma equipe medica."
+  "explanation": "O modelo preditivo estimou probabilidade de sepse de 61.5% e classificou o paciente como risco elevado de sepse. Recomenda-se avaliação médica imediata conforme protocolo clínico. Os principais fatores informados associados à decisão foram: pressao arterial media baixa, lactato elevado, frequencia respiratoria aumentada, temperatura alterada, leucocitos alterados, frequencia cardiaca elevada. As variáveis clínicas consideradas na explicação incluem: MAP, Lactate, Resp, Temp, WBC, HR. Esta explicação é apenas apoio à decisão clínica, não é diagnóstico definitivo e não substitui avaliação de uma equipe médica."
 }
