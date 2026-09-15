@@ -1,8 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List
 
 from .audit_logger import write_audit_log
+from .langchain_pipeline import generate_contextual_answer
 from .patient_repository import PatientRepository
 from .phase2_risk_tool import estimate_sepsis_risk
 from .protocol_retriever import ProtocolRetriever
@@ -34,7 +35,7 @@ def retrieve_protocols_node(state: Dict[str, Any]) -> Dict[str, Any]:
     retriever = ProtocolRetriever()
     patient = state.get("patient_data", {})
     query = f"{state.get('question', '')} {patient.get('queixa_principal', '')} sepse exames alerta segurança"
-    protocols = retriever.search(query, limit=3)
+    protocols = retriever.retrieve(query, limit=3)
     if state.get("safety", {}).get("status") == "blocked":
         limits = [doc for doc in retriever.documents if doc.source == "protocolo_limites_assistente.md"]
         if limits:
@@ -49,7 +50,7 @@ def estimate_risk_node(state: Dict[str, Any]) -> Dict[str, Any]:
     return _mark(state, "estimate_risk_node")
 
 
-def generate_answer_node(state: Dict[str, Any]) -> Dict[str, Any]:
+def _template_answer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     patient = state.get("patient_data", {})
     risk = state.get("risk", {})
     factors = ", ".join(risk.get("factors", [])) or "sem fatores críticos claros"
@@ -73,6 +74,22 @@ def generate_answer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     return _mark(state, "generate_answer_node")
 
 
+def generate_answer_node(state: Dict[str, Any]) -> Dict[str, Any]:
+    def fallback():
+        copy = {**state, "executed_nodes": []}
+        return _template_answer_node(copy)["draft_answer"]
+    generation = generate_contextual_answer(
+        question=state.get("question", ""), patient=state.get("patient_data", {}),
+        risk=state.get("risk", {}), pending_exams=state.get("pending_exams", []),
+        protocols=state.get("protocols", []), sources=state.get("sources", []),
+        blocked=state.get("safety", {}).get("status") == "blocked", fallback=fallback,
+    )
+    state["draft_answer"] = generation["answer"]
+    state["generation_mode"] = generation["generation_mode"]
+    state["generation_fallback_reason"] = generation["generation_fallback_reason"]
+    return _mark(state, "generate_answer_node")
+
+
 def safety_validation_node(state: Dict[str, Any]) -> Dict[str, Any]:
     state["final_answer"] = complete_safe_answer(state.get("draft_answer", ""), state.get("sources", []))
     state["safety"] = {
@@ -87,6 +104,8 @@ def audit_log_node(state: Dict[str, Any]) -> Dict[str, Any]:
     write_audit_log({
         "patient_id": state.get("patient_id"),
         "question": state.get("question"),
+        "generation_mode": state.get("generation_mode"),
+        "generation_fallback_reason": state.get("generation_fallback_reason"),
         "executed_nodes": state.get("executed_nodes", []),
         "sources": state.get("sources", []),
         "risk": state.get("risk", {}),

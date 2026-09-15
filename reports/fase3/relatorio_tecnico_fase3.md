@@ -1,4 +1,4 @@
-﻿# Relatório Técnico - Tech Challenge Fase 3
+# Relatório Técnico - Tech Challenge Fase 3
 
 ## 1. Introdução
 
@@ -14,19 +14,44 @@ Foram criados pacientes e exemplos clínicos totalmente sintéticos em `data/fas
 
 ## 4. Pipeline de fine-tuning
 
-O pipeline lê arquivos JSONL em `data/fase3/raw/`, aplica limpeza, anonimização e curadoria, e gera `data/fase3/processed/fine_tuning_dataset.jsonl` em formato conversacional com mensagens `system`, `user` e `assistant`. O resumo da preparação é salvo em `reports/fase3/dataset_preparation_summary.json`.
+O gerador local determinístico cria 120 registros em oito categorias: triagem (20), exames (20),
+alertas (20), FAQ (15), recusas (15), limites (10), prontuário (10) e pendentes (10).
+Somados aos 9 exemplos originais preservados, são 129 diálogos processados e anonimizados.
+Os templates usam exclusivamente referências sintéticas locais; repetição e cobertura limitada
+são limitações do conjunto, e não se presume representatividade clínica.
 
-O modo padrão é mock e local:
+`train_finetune --mock` valida o dataset e produz um JSON simulado, sem ajustar pesos.
+Esse modo **não equivale a fine-tuning real**. `train_finetune --real` executa treinamento causal
+com Hugging Face Trainer e PEFT/LoRA, após verificar dependências opcionais, CUDA e memória.
+Aplica o chat template do tokenizer, treina, salva adapter e tokenizer e registra metadata
+somente após o término bem-sucedido. O destino existente é protegido contra sobrescrita.
 
-```bash
-python -m src.tc_fase3.train_finetune --mock
-```
+Modelo base: `Qwen/Qwen2.5-0.5B-Instruct`. Parâmetros propostos: 1 epoch, batch 1,
+learning rate 2e-4, comprimento 512, r=8, alpha=16, dropout=0.05, módulos q_proj/v_proj,
+acumulação de gradientes 4 e seed 42. Treinamento sobre o diálogo inteiro (padding mascarado),
+sem split de validação; a loss é de treino e não demonstra generalização.
+`train_loss` é a média dos passos; `last_logged_loss` e `loss_history` registram a evolução.
 
-Esse modo valida o dataset e salva `models/fase3/fine_tuned/mock_finetuned_model.json`. O modo real opcional (`--real`) apenas verifica dependências como `transformers`, `datasets`, `peft` e `trl`, sem baixar modelos pesados automaticamente.
+Execução GPU, parâmetros efetivamente executados, loss e comparação com pesos reais:
+**Pendente de execução em ambiente GPU**. Nenhum resultado de treino foi inventado.
+
+O notebook `notebook/fase3_finetuning_colab.ipynb` contém instalação, dataset, LoRA,
+treinamento, inspeção da loss, comparação qualitativa e exportação das evidências.
+Dependências pesadas ficam em `requirements-finetuning.txt`. O runtime local de testes
+continua sem GPU. A Fase 3 não usa OpenAI ou API externa de geração.
 
 ## 5. Assistente com LangChain
 
-O assistente está implementado em `src/tc_fase3/assistant.py`. Ele consulta `PatientRepository`, busca protocolos com `ProtocolRetriever`, estima risco com `phase2_risk_tool.py`, aplica regras de segurança e registra auditoria. Quando LangChain está disponível, o retriever oferece documentos compatíveis com `langchain_core.documents.Document`; sem essa dependência, a busca local por palavras-chave permanece funcional.
+O assistente e o nó de geração do LangGraph compartilham `langchain_pipeline.py`.
+O retriever lexical expõe `RunnableLambda` e retorna objetos `Document`, sem embeddings externos.
+A composição real é `RunnableLambda(contexto) | ChatPromptTemplate | RunnableLambda(LLM) | StrOutputParser`.
+A LLM customizada carrega o modelo base e o adapter PEFT; papéis de chat são preservados
+até a aplicação do tokenizer. Recebe paciente, risco, exames pendentes, protocolos e fontes.
+
+Com adapter carregado e resposta aprovada, retorna `fine_tuned_langchain`. Sem adapter,
+sem dependências, em erro ou reprovação da resposta, usa o template seguro existente e informa
+`template_fallback` com motivo na API e auditoria. Perguntas bloqueadas não chegam ao modelo.
+Os testes exercitam LangChain e LangGraph reais com backend mockado e sem pesos pesados.
 
 ## 6. Fluxo com LangGraph
 
@@ -39,7 +64,7 @@ flowchart TD
     C --> D[Verificação de exames pendentes]
     D --> E[Busca em protocolos internos]
     E --> F[Estimativa de risco com modelo Fase 2 ou fallback]
-    F --> G[Geração da resposta]
+    F --> G[LangChain + LLM fine-tuned ou fallback]
     G --> H[Validação final de segurança]
     H --> I[Log de auditoria]
     I --> J[Resposta final com fontes]
@@ -92,8 +117,42 @@ Resultados atuais em `reports/fase3/avaliacao_assistente.json`:
 
 ## 12. Limitações
 
-Os dados e protocolos são sintéticos e acadêmicos. Não houve validação clínica real ou prospectiva. O fine-tuning padrão é mock por limitação local e para manter reprodutibilidade sem GPU. O uso real exigiria validação externa, governança clínica, monitoramento contínuo, auditoria institucional e revisão por profissionais habilitados.
+Os dados e protocolos são sintéticos e acadêmicos. Não houve validação clínica real ou prospectiva. O treinamento LoRA está implementado, mas sua execução GPU e avaliação com pesos reais permanecem pendentes. As heurísticas lexicais e os filtros de geração não garantem segurança, idioma ou aderência clínica. Os 10 prompts de avaliação não integram os templates de treino, mas não constituem validação clínica ou benchmark independente. O uso real exigiria validação externa, governança clínica, monitoramento contínuo, auditoria institucional e revisão por profissionais habilitados.
 
 ## 13. Conclusão
 
-O projeto atende à Fase 3 ao adicionar pipeline de fine-tuning acadêmico, dataset sintético anonimizado, assistente com compatibilidade LangChain, fluxo LangGraph ou fallback sequencial, consulta a pacientes e protocolos sintéticos, integração com o modelo da Fase 2, auditoria, explainability com fontes, validação de segurança, API, demo, avaliação e testes automatizados.
+A Fase 2 e os componentes existentes foram preservados. A implementação passa a oferecer
+LoRA real e orquestração LangChain com backend PEFT local, mantendo execução de validação
+sem GPU. A entrega não está 100% concluída: ainda exige executar o treino no Colab/GPU,
+preservar adapter e metadata e revisar a comparação base versus fine-tuned.
+
+Para atualizar esta seção de evidências após o treinamento:
+
+```bash
+python -m src.tc_fase3.evaluate_finetuned_model --update-report
+```
+
+A avaliação exporta respostas brutas sem acrescentar avisos automáticos, para não favorecer
+artificialmente as métricas dos modelos. Sem adapter, o status é `not_evaluated_no_real_adapter`.
+As taxas locais do assistente da seção 11 avaliam o fallback e não o modelo fine-tuned.
+
+## Referências de implementação
+
+- [PEFT: configuração e treinamento LoRA](https://huggingface.co/docs/peft/quicktour).
+- [Transformers: Trainer](https://huggingface.co/docs/transformers/v4.57.1/main_classes/trainer).
+- [LangChain: composição Runnable](https://reference.langchain.com/python/langchain-core/runnables/base).
+
+
+<!-- REAL_FINETUNING_RESULTS_START -->
+## Evidências de fine-tuning real
+
+- Modelo base: Qwen/Qwen2.5-0.5B-Instruct.
+- Status do treinamento: Pendente de execução em ambiente GPU.
+- Dataset: 129 exemplos preparados; execução pendente.
+- Loss média de treinamento: Pendente de execução em ambiente GPU.
+- Última loss registrada: Pendente de execução em ambiente GPU.
+- Tempo em segundos: Pendente de execução em ambiente GPU.
+- Comparação antes/depois: not_evaluated_no_real_adapter.
+
+Comparação qualitativa e métricas reais: Pendente de execução em ambiente GPU.
+<!-- REAL_FINETUNING_RESULTS_END -->

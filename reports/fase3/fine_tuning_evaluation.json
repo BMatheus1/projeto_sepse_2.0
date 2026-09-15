@@ -1,0 +1,7 @@
+{
+  "timestamp": "2026-09-15T16:21:45.519711+00:00",
+  "adapter_path": "D:\\projeto_sepse_2.0\\models\\fase3\\fine_tuned\\adapter",
+  "status": "not_evaluated_no_real_adapter",
+  "results": [],
+  "limitations": "Heurísticas lexicais sobre respostas brutas; não medem qualidade clínica, não garantem segurança e exigem revisão qualitativa humana."
+}

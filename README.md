@@ -225,16 +225,21 @@ A Fase 3 evolui o projeto da Fase 2 para um assistente médico acadêmico de apo
 
 ```mermaid
 flowchart TD
-    A[Dados sintéticos] --> B[Preprocessing e anonimização]
-    B --> C[Dataset de fine-tuning]
-    C --> D[Fine-tuning mock]
-    E[Paciente sintético] --> F[Assistente Fase 3]
-    G[Protocolos sintéticos] --> F
-    H[Modelo otimizado Fase 2 ou fallback clínico] --> F
-    F --> I[Validação de segurança]
-    I --> J[Resposta com fontes]
-    I --> K[Log de auditoria]
+    A[Dados sintéticos] --> B[Preprocessing]
+    B --> C[Dataset]
+    C --> D[LoRA fine-tuning em GPU]
+    D --> E[Adapter]
+    E --> F[FineTunedMedicalLLM]
+    F --> G[LangChain]
+    G --> H[LangGraph]
+    H --> I[Safety]
+    I --> J[Auditoria]
+    J --> K[Resposta com fontes]
 ```
+
+LangGraph chama a pipeline LangChain no nó de geração. Sem adapter ou dependências,
+o fluxo executa o fallback textual seguro e informa `generation_mode=template_fallback`.
+
 
 ## Estrutura da Fase 3
 
@@ -254,6 +259,7 @@ tests/test_fase3_*.py
 ## Como gerar dataset de fine-tuning
 
 ```bash
+python -m src.tc_fase3.generate_synthetic_finetuning_data
 python -m src.tc_fase3.prepare_finetuning_dataset
 ```
 
@@ -272,7 +278,69 @@ Saída:
 
 - `models/fase3/fine_tuned/mock_finetuned_model.json`
 
-O modo real opcional está estruturado com `--real`, mas não baixa modelos pesados automaticamente e depende de ambiente adequado.
+O mock valida a preparação e salva metadados simulados; **não treina pesos e não substitui fine-tuning real**.
+A entrega final deve conter evidência de execução real: adapter, metadata, loss e comparação antes/depois.
+
+## Fine-tuning real com LoRA
+
+Recomendado: Google Colab com GPU CUDA (por exemplo T4), Python 3.10–3.12.
+Notebook autocontido: `notebook/fase3_finetuning_colab.ipynb`. Publique estas alterações na referência Git escolhida antes de clonar no Colab.
+O treinamento real é acionado explicitamente; os testes locais continuam sem GPU e não baixam pesos.
+A primeira execução real baixa o modelo público do Hugging Face, sem chave de API.
+
+```bash
+pip install -r requirements-finetuning.txt
+python -m src.tc_fase3.generate_synthetic_finetuning_data
+python -m src.tc_fase3.prepare_finetuning_dataset
+python -m src.tc_fase3.train_finetune --real --model-name Qwen/Qwen2.5-0.5B-Instruct --epochs 1 --batch-size 1 --learning-rate 2e-4 --max-length 512 --lora-r 8 --lora-alpha 16
+python -m src.tc_fase3.evaluate_finetuned_model --update-report
+```
+
+Saídas:
+
+- `models/fase3/fine_tuned/adapter/`: pesos LoRA, configuração e tokenizer.
+- `models/fase3/fine_tuned/training_metadata.json`: configuração executada, SHA-256 do dataset, loss média, última loss registrada, histórico, tempo e GPU.
+- `reports/fase3/fine_tuning_evaluation.json` e `.csv`: respostas brutas base versus adapter em 10 prompts, com heurísticas de segurança, fontes, português e aderência lexical.
+
+Configuração padrão: 129 exemplos (120 novos + 9 preservados), LoRA em `q_proj`/`v_proj`,
+`r=8`, `alpha=16`, dropout `0.05`, 1 epoch, batch 1, acumulação 4, learning rate `2e-4`,
+comprimento 512 e seed 42. Usa `transformers.Trainer` e PEFT; TRL está nas dependências opcionais,
+mas não é necessário ao Trainer escolhido. Treina previsão causal sobre o diálogo completo,
+com padding mascarado; não é treinamento restrito às respostas do assistente.
+`train_loss` é a média dos passos de otimização; `last_logged_loss` é a última loss registrada.
+Não há estimativa de generalização a partir da loss de treino.
+
+O comando falha claramente sem CUDA, com dependências ausentes ou memória insuficiente.
+Para repetir sem sobrescrever evidências, use `--output-dir models/fase3/experimento_02`;
+na avaliação correspondente, use `--adapter-path models/fase3/experimento_02/adapter`.
+`bitsandbytes` é recomendado apenas para Linux/Colab e tem marcador de plataforma;
+o treinamento padrão do modelo 0.5B não utiliza quantização. Windows local usa fallback sem essas dependências.
+Os pesos grandes são ignorados pelo Git; baixe e preserve o ZIP de evidências produzido pelo notebook.
+
+## Integração LangChain com LLM customizada
+
+`assistant.py` e `graph_nodes.py` chamam `langchain_pipeline.py`:
+
+```text
+Retriever lexical RunnableLambda -> Document -> contexto
+-> ChatPromptTemplate -> RunnableLambda(FineTunedMedicalLLM)
+-> StrOutputParser -> validação de resposta -> segurança -> auditoria
+```
+
+A LLM recebe pergunta, paciente, exames pendentes, risco, protocolos e fontes.
+O wrapper preserva papéis system/user e aplica o chat template do tokenizer usado no treino.
+Quando um adapter real está presente, retorna `generation_mode=fine_tuned_langchain`;
+sem artefato/dependência ou em falha/reprovação da geração, retorna `template_fallback` e o motivo.
+Perguntas bloqueadas são recusadas antes da LLM. O retriever local não usa embeddings nem serviços externos.
+A API e a auditoria também expõem o modo de geração. A Fase 3 não depende de OpenAI.
+
+Após copiar o adapter do Colab para `models/fase3/fine_tuned/adapter/`, execute a demo ou API normalmente.
+Para outro caminho, configure `FASE3_ADAPTER_PATH`; o modelo base é lido do adapter.
+`FASE3_BASE_MODEL` permite override explícito, mas precisa corresponder ao modelo do adapter.
+Inferência usa CUDA quando disponível ou CPU (mais lenta e sujeita à memória disponível).
+
+**Estado das evidências:** treinamento GPU e comparação com pesos reais ainda pendentes.
+Os testes com mocks comprovam o encadeamento de software, não qualidade ou execução real do treinamento.
 
 ## Como rodar demo
 
@@ -323,7 +391,8 @@ Os testes da Fase 3 passam sem chave OpenAI, sem GPU e sem dependências pesadas
 - O assistente não fecha diagnóstico definitivo.
 - Toda resposta exige validação humana obrigatória.
 - Respostas devem citar fontes e diferenciar dados do paciente, protocolos e inferências.
-- Fine-tuning real é opcional; o modo padrão é mock e reprodutível localmente.
+- O treinamento real é necessário para concluir a entrega; o mock permite apenas validação local sem GPU.
+- Filtros por padrões e métricas lexicais não garantem segurança clínica; dados sintéticos e respostas requerem revisão humana.
 
 ## Logs
 
@@ -337,8 +406,8 @@ Cada evento registra timestamp, paciente, pergunta, nós executados, fontes cons
 
 - Dataset sintético/anonimizado para fine-tuning.
 - Pipeline de preprocessing e curadoria.
-- Fine-tuning mock e modo real opcional.
-- Assistente com compatibilidade LangChain.
+- Fine-tuning real LoRA implementado e modo mock de validação local.
+- Assistente com pipeline LangChain e backend local customizado PEFT.
 - Fluxo LangGraph ou fallback sequencial documentado.
 - API FastAPI da Fase 3.
 - Demo automatizada.
@@ -353,7 +422,8 @@ Cada evento registra timestamp, paciente, pergunta, nós executados, fontes cons
 - [x] Preprocessing, anonimização e curadoria implementados.
 - [x] Dataset JSONL conversacional gerado.
 - [x] Fine-tuning mock implementado.
-- [x] Modo real opcional preparado.
+- [x] Treinamento real LoRA implementado.
+- [ ] Execução GPU, adapter real e comparação antes/depois comprovados.
 - [x] Assistente médico acadêmico implementado.
 - [x] Consulta a pacientes e protocolos implementada.
 - [x] Integração com modelo da Fase 2 ou fallback clínico implementada.

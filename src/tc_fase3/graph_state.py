@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List, TypedDict
 
@@ -15,3 +15,5 @@ class SepsisGraphState(TypedDict, total=False):
     sources: List[str]
     safety: Dict[str, Any]
     executed_nodes: List[str]
+    generation_mode: str
+    generation_fallback_reason: str | None

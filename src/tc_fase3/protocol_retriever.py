@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from dataclasses import dataclass
@@ -53,3 +53,20 @@ class ProtocolRetriever:
         except ImportError:
             return []
         return [Document(page_content=doc.content, metadata={"source": doc.source}) for doc in self.documents]
+
+    def as_runnable(self, limit: int = 3):
+        """Retriever lexical local consumível via invoke e composição LCEL."""
+        from langchain_core.documents import Document
+        from langchain_core.runnables import RunnableLambda
+        return RunnableLambda(lambda query: [
+            Document(page_content=item["content"], metadata={"source": item["source"], "score": item["score"]})
+            for item in self.search(query, limit=limit)
+        ])
+
+    def retrieve(self, query: str, limit: int = 3) -> List[Dict[str, Any]]:
+        try:
+            runnable = self.as_runnable(limit)
+        except ImportError:
+            return self.search(query, limit)
+        return [{"source": doc.metadata["source"], "score": doc.metadata["score"], "content": doc.page_content}
+                for doc in runnable.invoke(query)]

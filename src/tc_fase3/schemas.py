@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List, Literal
 
@@ -35,6 +35,8 @@ class AssistantResponse(BaseModel):
     sources: List[str]
     safety: SafetyPayload
     executed_nodes: List[str] = []
+    generation_mode: Literal["fine_tuned_langchain", "template_fallback"] = "template_fallback"
+    generation_fallback_reason: str | None = None
 
 
 JsonDict = Dict[str, Any]

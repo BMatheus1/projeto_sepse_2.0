@@ -1,8 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict, List
 
 from .audit_logger import write_audit_log
+from .langchain_pipeline import generate_contextual_answer
 from .patient_repository import PatientRepository
 from .phase2_risk_tool import estimate_sepsis_risk
 from .protocol_retriever import ProtocolRetriever
@@ -59,7 +60,7 @@ class SepsisAssistant:
         executed_nodes.append("load_patient")
 
         query = f"{question} {patient.get('queixa_principal', '')} sepse alerta exames validação"
-        protocols = self.retriever.search(query, limit=3)
+        protocols = self.retriever.retrieve(query, limit=3)
         if question_status["status"] == "blocked":
             limit_protocols = [doc for doc in self.retriever.documents if doc.source == "protocolo_limites_assistente.md"]
             if limit_protocols:
@@ -69,7 +70,14 @@ class SepsisAssistant:
         risk = estimate_sepsis_risk(patient)
         executed_nodes.append("estimate_risk")
 
-        answer = self._build_answer(patient, question, risk, protocols, question_status)
+        sources = list(dict.fromkeys([item["source"] for item in protocols] + [PATIENT_SOURCE]))
+        generation = generate_contextual_answer(
+            question=question, patient=patient, risk=risk,
+            pending_exams=patient.get("exames_pendentes", []), protocols=protocols, sources=sources,
+            blocked=question_status["status"] == "blocked",
+            fallback=lambda: self._build_answer(patient, question, risk, protocols, question_status),
+        )
+        answer = complete_safe_answer(generation["answer"], sources)
         executed_nodes.append("generate_answer")
 
         sources = list(dict.fromkeys([item["source"] for item in protocols] + [PATIENT_SOURCE]))
@@ -83,6 +91,7 @@ class SepsisAssistant:
         result = {
             "patient_id": patient_id,
             "question": question,
+            **generation,
             "answer": answer,
             "risk": risk,
             "sources": sources,

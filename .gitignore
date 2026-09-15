@@ -11,3 +11,7 @@ logs/*.log
 !logs/fase3_assistant_audit.log
 models/*.pkl
 reports/*.png
+
+# Pesos reais: preservar por exportação do notebook, não por Git.
+models/fase3/**/adapter/
+models/fase3/**/checkpoints/

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any, Dict
 
@@ -15,7 +15,7 @@ flowchart TD
     C --> D[Verificação de exames pendentes]
     D --> E[Busca em protocolos internos]
     E --> F[Estimativa de risco com modelo Fase 2 ou fallback]
-    F --> G[Geração da resposta]
+    F --> G[LangChain + LLM fine-tuned ou fallback]
     G --> H[Validação final de segurança]
     H --> I[Log de auditoria]
     I --> J[Resposta final com fontes]
@@ -35,6 +35,8 @@ def _to_response(state: Dict[str, Any]) -> Dict[str, Any]:
         "patient_id": state["patient_id"],
         "question": state["question"],
         "answer": state.get("final_answer", state.get("draft_answer", "")),
+        "generation_mode": state.get("generation_mode", "template_fallback"),
+        "generation_fallback_reason": state.get("generation_fallback_reason"),
         "risk": state.get("risk", {}),
         "sources": state.get("sources", []),
         "safety": state.get("safety", {}),

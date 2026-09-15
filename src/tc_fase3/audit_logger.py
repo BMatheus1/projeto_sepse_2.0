@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
@@ -13,6 +13,8 @@ def write_audit_log(event: Dict[str, Any]) -> str:
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "patient_id": event.get("patient_id"),
         "question": event.get("question"),
+        "generation_mode": event.get("generation_mode", "template_fallback"),
+        "generation_fallback_reason": event.get("generation_fallback_reason"),
         "executed_nodes": event.get("executed_nodes", []),
         "sources": event.get("sources", []),
         "risk_level": event.get("risk", {}).get("risk_level"),

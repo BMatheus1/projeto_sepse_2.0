@@ -22,3 +22,8 @@ SYSTEM_PROMPT = (
     "Você é um assistente médico acadêmico para apoio à triagem de sepse. "
     "Não fornece diagnóstico definitivo e exige validação humana."
 )
+
+DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+FINETUNED_DIR = ROOT / "models" / "fase3" / "fine_tuned"
+ADAPTER_PATH = FINETUNED_DIR / "adapter"
+TRAINING_METADATA_PATH = FINETUNED_DIR / "training_metadata.json"

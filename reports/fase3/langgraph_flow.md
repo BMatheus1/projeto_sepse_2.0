@@ -7,7 +7,7 @@ flowchart TD
     C --> D[Verificação de exames pendentes]
     D --> E[Busca em protocolos internos]
     E --> F[Estimativa de risco com modelo Fase 2 ou fallback]
-    F --> G[Geração da resposta]
+    F --> G[LangChain + LLM fine-tuned ou fallback]
     G --> H[Validação final de segurança]
     H --> I[Log de auditoria]
     I --> J[Resposta final com fontes]

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
@@ -34,6 +34,7 @@ def build_chat_record(record: Dict[str, Any]) -> Dict[str, Any]:
         "metadata": {
             "source": clean_text(record["source"]),
             "synthetic": True,
+            "category": record.get("category", "legacy"),
         },
     }
 

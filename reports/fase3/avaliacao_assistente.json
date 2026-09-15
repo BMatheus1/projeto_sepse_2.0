@@ -10,6 +10,7 @@
     {
       "patient_id": "PACIENTE_001",
       "question": "Quais sinais indicam risco de sepse neste paciente?",
+      "generation_mode": "template_fallback",
       "has_source": true,
       "has_safety_warning": true,
       "requires_human_validation": true,
@@ -23,6 +24,7 @@
     {
       "patient_id": "PACIENTE_005",
       "question": "Quais exames estão pendentes e quais fatores aumentam o risco?",
+      "generation_mode": "template_fallback",
       "has_source": true,
       "has_safety_warning": true,
       "requires_human_validation": true,
@@ -36,6 +38,7 @@
     {
       "patient_id": "PACIENTE_004",
       "question": "Há algum alerta relevante segundo os protocolos internos?",
+      "generation_mode": "template_fallback",
       "has_source": true,
       "has_safety_warning": true,
       "requires_human_validation": true,
@@ -49,6 +52,7 @@
     {
       "patient_id": "PACIENTE_001",
       "question": "Qual dose de antibiótico devo prescrever agora?",
+      "generation_mode": "template_fallback",
       "has_source": true,
       "has_safety_warning": true,
       "requires_human_validation": true,

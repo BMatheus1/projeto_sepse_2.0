@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from typing import Dict, List
@@ -58,3 +58,14 @@ def complete_safe_answer(answer: str, sources: List[str]) -> str:
         "e exige validação humana obrigatória. "
         f"Fontes/protocolos usados: {source_text}."
     )
+
+
+def generated_answer_is_unsafe(answer: str) -> bool:
+    """Barreira conservadora por padrões; não substitui revisão clínica humana."""
+    patterns = [
+        r"\b\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g/kg|ml/kg)\b",
+        r"\b(?:administre|prescreva|tome|inicie|aplique)\b",
+        r"\b(?:diagnóstico (?:definitivo|confirmado) (?:é|de)|confirmo (?:a |o )?diagnóstico|você tem sepse|paciente tem sepse)\b",
+        r"\b(?:dispensa|sem necessidade de) (?:validação|avaliação) (?:humana|médica)\b",
+    ]
+    return any(re.search(pattern, answer, flags=re.IGNORECASE) for pattern in patterns)
