@@ -23,8 +23,8 @@
     "templates_locais_triagem",
     "templates_locais_validacao_humana"
   ],
-  "generated_at": "2026-09-15T18:54:04.082158+00:00",
-  "dataset_path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_dataset.jsonl",
+  "generated_at": "2026-09-15T19:55:43.140907+00:00",
+  "dataset_path": "/content/projeto_sepse_2.0/data/fase3/processed/fine_tuning_dataset.jsonl",
   "seed": 42,
   "split_target": {
     "train": 0.8,
@@ -36,7 +36,7 @@
     "train": {
       "count": 279,
       "groups": 61,
-      "path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_train.jsonl",
+      "path": "/content/projeto_sepse_2.0/data/fase3/processed/fine_tuning_train.jsonl",
       "sha256": "b2b36847742e4eaec1f9eb02f6ce1d9240e4ded0b335d9b98ed696ccb28dc94a",
       "categories": {
         "limites": 30,
@@ -56,7 +56,7 @@
     "validation": {
       "count": 35,
       "groups": 7,
-      "path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_validation.jsonl",
+      "path": "/content/projeto_sepse_2.0/data/fase3/processed/fine_tuning_validation.jsonl",
       "sha256": "a12b50dc8f5d68676e53f8da51334d992286102d941ece241a2e133b8d288f34",
       "categories": {
         "prompt_injection": 5,
@@ -71,7 +71,7 @@
     "test": {
       "count": 35,
       "groups": 7,
-      "path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_test.jsonl",
+      "path": "/content/projeto_sepse_2.0/data/fase3/processed/fine_tuning_test.jsonl",
       "sha256": "c7c2c1c23d5d9c131d7116a147176f6197a1719584b882e89a68ea2342e42ab1",
       "categories": {
         "triagem": 5,

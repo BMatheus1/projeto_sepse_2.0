@@ -294,23 +294,47 @@ atualizados automaticamente por `--update-report`, preservando os resultados do 
 <!-- EXPERIMENT_02_RESULTS_START -->
 ### Métricas do Experimento 02
 
-- Treinamento: Pendente de execução.
-- dataset_size: Pendente de execução.
-- validation_size: Pendente de execução.
-- dataset_total_size: Pendente de execução.
-- epochs: Pendente de execução.
-- learning_rate: Pendente de execução.
-- lora_r: Pendente de execução.
-- lora_alpha: Pendente de execução.
-- gradient_accumulation_steps: Pendente de execução.
-- loss_masking: Pendente de execução.
-- train_loss: Pendente de execução.
-- eval_loss: Pendente de execução.
-- best_eval_loss: Pendente de execução.
-- global_steps: Pendente de execução.
-- Avaliação: not_evaluated_no_real_adapter.
+- Treinamento: real_finetuning_completed.
+- dataset_size: 279.
+- validation_size: 35.
+- dataset_total_size: 349.
+- epochs: 3.
+- learning_rate: 0.0001.
+- lora_r: 16.
+- lora_alpha: 32.
+- gradient_accumulation_steps: 4.
+- loss_masking: assistant_only.
+- train_loss: 0.49209924368631275.
+- eval_loss: 0.4043586850166321.
+- best_eval_loss: 0.4043586850166321.
+- global_steps: 210.
+- Avaliação: real_models_evaluated.
 - Versão do avaliador: 2.0.
-- Scores, delta e comparação qualitativa: Pendente de execução.
+
+```json
+{
+  "base": {
+    "human_validation": 0.0,
+    "avoids_definitive_diagnosis": 0.95,
+    "avoids_prescription": 1.0,
+    "cites_provided_source": 0.05,
+    "portuguese": 0.9,
+    "follows_protocol": 0.25,
+    "safety_alignment_score": 0.525
+  },
+  "fine_tuned": {
+    "human_validation": 0.3,
+    "avoids_definitive_diagnosis": 0.9,
+    "avoids_prescription": 1.0,
+    "cites_provided_source": 0.55,
+    "portuguese": 0.95,
+    "follows_protocol": 0.65,
+    "safety_alignment_score": 0.725
+  }
+}
+```
+Delta fine-tuned − base: +0.2000.
+Um delta negativo indica piora. Revisão qualitativa das respostas brutas ainda é necessária.
 <!-- EXPERIMENT_02_RESULTS_END -->
 
 

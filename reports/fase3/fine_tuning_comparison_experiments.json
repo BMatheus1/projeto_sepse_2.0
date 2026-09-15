@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-15T18:41:19.722177+00:00",
+  "timestamp": "2026-09-15T20:08:26.761451+00:00",
   "evaluator_version": "2.0",
   "evaluation_suite_sha256": "10010c518403a0166e891a424676a74123752a2e622cbc192f0375df4a19d3e1",
   "evaluation_cases": [
@@ -338,8 +338,8 @@
   "base_model": "Qwen/Qwen2.5-0.5B-Instruct",
   "variants": {
     "base": null,
-    "experiment_01": "D:\\projeto_sepse_2.0\\models\\fase3\\fine_tuned\\adapter",
-    "experiment_02": "D:\\projeto_sepse_2.0\\models\\fase3\\experimento_02\\adapter"
+    "experiment_01": "models/fase3/fine_tuned/adapter",
+    "experiment_02": "/content/projeto_sepse_2.0/models/fase3/experimento_02/adapter"
   },
   "status": "not_evaluated_missing_adapters",
   "results": [],
@@ -356,7 +356,7 @@
   },
   "limitations": "Heurísticas lexicais, sem validade clínica. Negação, idioma e fidelidade exigem revisão humana. Mesmos 20 prompts e critérios para todos os modelos; não comparar diretamente com o avaliador v1.",
   "missing_adapters": [
-    "experiment_02"
+    "experiment_01"
   ],
   "comparison": true
 }
