@@ -533,3 +533,6 @@ e portfólio. A disponibilização pública não concede autorização para copi
 redistribuir, comercializar ou apresentar o trabalho como de autoria de terceiros.
 
 Consulte o arquivo [LICENSE](LICENSE).
+
+Para informações de autoria, consulte [AUTHORS.md](AUTHORS.md).
+Para citação acadêmica, consulte [CITATION.cff](CITATION.cff).

@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "Se utilizar este projeto em contexto acadêmico, técnico ou científico, cite o autor e este repositório."
+title: "SepsisCare AI — Assistente Médico para Apoio à Triagem de Sepse"
+type: software
+authors:
+  - given-names: "Matheus Brito"
+    family-names: "da Silva"
+repository-code: "https://github.com/BMatheus1/projeto_sepse_2.0"
+url: "https://github.com/BMatheus1/projeto_sepse_2.0"
+license-url: "https://github.com/BMatheus1/projeto_sepse_2.0/blob/main/LICENSE"
+abstract: "Software acadêmico e de portfólio, sob licença proprietária. Copyright © 2026 Matheus Brito da Silva."
+preferred-citation:
+  type: software
+  title: "SepsisCare AI — Assistente Médico para Apoio à Triagem de Sepse"
+  authors:
+    - given-names: "Matheus Brito"
+      family-names: "da Silva"
+  year: 2026
+  url: "https://github.com/BMatheus1/projeto_sepse_2.0"
