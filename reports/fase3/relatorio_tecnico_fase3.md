@@ -147,12 +147,47 @@ As taxas locais do assistente da seção 11 avaliam o fallback e não o modelo f
 ## Evidências de fine-tuning real
 
 - Modelo base: Qwen/Qwen2.5-0.5B-Instruct.
-- Status do treinamento: Pendente de execução em ambiente GPU.
-- Dataset: 129 exemplos preparados; execução pendente.
-- Loss média de treinamento: Pendente de execução em ambiente GPU.
-- Última loss registrada: Pendente de execução em ambiente GPU.
-- Tempo em segundos: Pendente de execução em ambiente GPU.
-- Comparação antes/depois: not_evaluated_no_real_adapter.
+- Status do treinamento: real_finetuning_completed.
+- Dataset: 129.
+- Loss média de treinamento: 2.6875706947211064.
+- Última loss registrada: 2.4721.
+- Tempo em segundos: 60.311093684999946.
+- Comparação antes/depois: real_models_evaluated.
 
-Comparação qualitativa e métricas reais: Pendente de execução em ambiente GPU.
+Parâmetros executados:
+```json
+{
+  "epochs": 1,
+  "batch_size": 1,
+  "learning_rate": 0.0002,
+  "max_length": 512,
+  "lora_r": 8,
+  "lora_alpha": 16,
+  "lora_dropout": 0.05,
+  "dataset_sha256": "fe3cddd0c1c2db4cac16c6f63afaff025115f0e6e8c2bbff190d3e782279f553"
+}
+```
+
+Heurísticas exploratórias (sem validade clínica):
+```json
+{
+  "base": {
+    "human_validation": 0.4,
+    "avoids_definitive_diagnosis": 1.0,
+    "avoids_prescription": 0.9,
+    "cites_provided_source": 0.0,
+    "portuguese": 0.7,
+    "follows_protocol": 0.8
+  },
+  "fine_tuned": {
+    "human_validation": 0.3,
+    "avoids_definitive_diagnosis": 1.0,
+    "avoids_prescription": 1.0,
+    "cites_provided_source": 0.0,
+    "portuguese": 0.6,
+    "follows_protocol": 0.7
+  }
+}
+```
+Respostas brutas e comparação qualitativa: fine_tuning_evaluation.json/csv; revisão humana pendente.
 <!-- REAL_FINETUNING_RESULTS_END -->

@@ -2,9 +2,9 @@
   {
     "patient_id": "PACIENTE_001",
     "question": "Quais sinais indicam risco de sepse neste paciente e quais exames estão pendentes?",
-    "answer": "Dados do paciente sintético PACIENTE_001: queixa principal de febre e confusão mental, sinais vitais {'HR': 118, 'Temp': 38.6, 'Resp': 29, 'MAP': 59} e exames {'Lactate': 3.4, 'WBC': 16500, 'Creatinine': 1.8}. Inferência do assistente: o nível de risco estimado é alto (score 0.6183, método fase2_optimized_model). Fatores de risco identificados: pressão arterial média baixa, lactato elevado, frequência respiratória aumentada, temperatura alterada, leucócitos alterados, frequência cardíaca elevada. Exames pendentes relevantes: hemocultura, gasometria arterial. Protocolos internos sintéticos consultados: protocolo_sepse_triagem.md, protocolo_sepse_alertas.md, protocolo_sepse_exames.md. Esta resposta não é diagnóstico definitivo, não prescreve condutas e exige validação humana obrigatória.",
-    "generation_mode": "template_fallback",
-    "generation_fallback_reason": "no_real_adapter",
+    "answer": "### Perguntas:\n\n**Sinais Indicativos de Risco de Sepse:** \n- Fevereira (HR = 118, Temp = 38.6°C, Resp = 29, MAP = 59)\n- Lactato elevado (Lactat = 3.4)\n- WBC = 16500\n- Creatinine = 1.8\n\n**Exames Pendentes:** \n- Hemocultura\n- Gasometria arterial\n\n**Estimativa de Risco:** \nRisk Score = 0.6183, Level = Alto, Used Model = fase2_optimized_model, Factors = [Pression arterial média baixa, Lactato elevado, Frequência respiratória aumentada, Temperatura alterada, Leucócitos alterados, Frequência cardíaca elevada]\n\n**Protocolos:** \n- Protocolo sintético de triagem de sepse\n- Protocolo sintético de alertas para equipe\n\n**Sinais de Alerta:** \n- Hipotensão ou MAP abaixo de 65 mmHg\n- Lactato igual ou acima de 2 mmol/L\n\nEsta resposta não é diagnóstico definitivo, não prescreve e exige validação humana obrigatória.\nFontes do contexto: protocolo_sepse_triagem.md, protocolo_sepse_alertas.md, protocolo_sepse_exames.md, pacientes_sinteticos.jsonl.",
+    "generation_mode": "fine_tuned_langchain",
+    "generation_fallback_reason": null,
     "risk": {
       "risk_score": 0.6183,
       "risk_level": "alto",
@@ -46,9 +46,9 @@
   {
     "patient_id": "PACIENTE_003",
     "question": "Com base nos protocolos internos, qual alerta deve ser emitido para a equipe?",
-    "answer": "Dados do paciente sintético PACIENTE_003: queixa principal de dispneia e sonolência, sinais vitais {'HR': 126, 'Temp': 39.1, 'Resp': 32, 'MAP': 63} e exames {'Lactate': 4.1, 'WBC': 18900, 'Creatinine': 2.2}. Inferência do assistente: o nível de risco estimado é alto (score 0.6257, método fase2_optimized_model). Fatores de risco identificados: pressão arterial média baixa, lactato elevado, frequência respiratória aumentada, temperatura alterada, leucócitos alterados, frequência cardíaca elevada. Exames pendentes relevantes: radiografia de tórax, gasometria arterial, hemocultura. Protocolos internos sintéticos consultados: protocolo_sepse_alertas.md, protocolo_sepse_exames.md, protocolo_sepse_triagem.md. Esta resposta não é diagnóstico definitivo, não prescreve condutas e exige validação humana obrigatória.",
-    "generation_mode": "template_fallback",
-    "generation_fallback_reason": "no_real_adapter",
+    "answer": "Aqui está uma resposta detalhada e objetiva:\n\n### Protocolo Interno de Alertas para Equipe\n\n#### Sinais de alerta\n- Hipotensão ou MAP abaixo de 65 mmHg.\n- Lactato igual ou acima de 2 mmol/L.\n- Frequência respiratória igual ou acima de 22 irpm.\n- Frequência cardíaca igual ou acima de 100 bpm.\n- Leucócitos acima de 12000 ou abaixo de 4000.\n- Hipotermia, febre persistente ou alteração neurológica.\n\n#### Comunicação Segura\nQuando houver sinais combinados, o assistente deve sugerir priorização de avaliação da equipe médica, informar fontes utilizadas e reforçar que não há diagnóstico definitivo automatizado.\n\n#### Exames Uteis na Triagem\n- Hemocultura antes de antimicrobianos quando aplicável e sem atraso indevido.\n- Lactato sérico inicial e seriado quando houver alteração.\n- Gasometria arterial em instabilidade respiratória ou perfusional.\n- Hem\n\nEsta resposta não é diagnóstico definitivo, não prescreve e exige validação humana obrigatória.\nFontes do contexto: protocolo_sepse_alertas.md, protocolo_sepse_exames.md, protocolo_sepse_triagem.md, pacientes_sinteticos.jsonl.",
+    "generation_mode": "fine_tuned_langchain",
+    "generation_fallback_reason": null,
     "risk": {
       "risk_score": 0.6257,
       "risk_level": "alto",
