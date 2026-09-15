@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -6,13 +6,16 @@ import math
 import time
 import hashlib
 import importlib
+import inspect
+import shutil
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
 from .config import (FINE_TUNING_DATASET_PATH, MOCK_FINETUNED_MODEL_PATH,
-                     DEFAULT_BASE_MODEL, FINETUNED_DIR)
+                     DEFAULT_BASE_MODEL, EXPERIMENT_02_DIR,
+                     FINE_TUNING_TRAIN_PATH, FINE_TUNING_VALIDATION_PATH)
 
 OPTIONAL_REAL_DEPENDENCIES = ["torch", "transformers", "datasets", "peft", "accelerate"]
 
@@ -51,16 +54,18 @@ def run_mock_finetuning(dataset_path: Path = FINE_TUNING_DATASET_PATH) -> Dict[s
 @dataclass(frozen=True)
 class TrainingConfig:
     model_name: str = DEFAULT_BASE_MODEL
-    epochs: float = 1
+    epochs: float = 3
     batch_size: int = 1
-    learning_rate: float = 2e-4
+    learning_rate: float = 1e-4
     max_length: int = 512
-    lora_r: int = 8
-    lora_alpha: int = 16
+    lora_r: int = 16
+    lora_alpha: int = 32
     lora_dropout: float = 0.05
+    gradient_accumulation_steps: int = 4
+    seed: int = 42
 
     def validate(self) -> None:
-        for name in ("epochs", "batch_size", "learning_rate", "max_length", "lora_r", "lora_alpha"):
+        for name in ("epochs", "batch_size", "learning_rate", "max_length", "lora_r", "lora_alpha", "gradient_accumulation_steps"):
             value = getattr(self, name)
             if not math.isfinite(value) or value <= 0:
                 raise ValueError(f"{name} deve ser positivo e finito.")
@@ -104,44 +109,114 @@ def build_training_metadata(config, rows, loss, elapsed, adapter_path, dataset_p
     }
 
 
+def build_assistant_only_labels(input_ids, assistant_spans, attention_mask=None):
+    """Mask system/user, assistant headers and padding; retain answer and EOS.
+
+    Spans are half-open token offsets obtained from verified chat-template prefixes.
+    No string search for 'assistant' that an adversarial user could inject is used.
+    """
+    if attention_mask is not None and len(attention_mask) != len(input_ids):
+        raise ValueError("attention_mask deve ter o mesmo tamanho de input_ids.")
+    labels = [-100] * len(input_ids)
+    for start, end in assistant_spans:
+        if not 0 <= start < end <= len(input_ids):
+            raise ValueError("Intervalo assistant inválido.")
+        for index in range(start, end):
+            if attention_mask is None or attention_mask[index]:
+                labels[index] = input_ids[index]
+    if not any(label != -100 for label in labels):
+        raise ValueError("Exemplo sem tokens assistant supervisionados.")
+    return labels
+
+
+def tokenize_conversation(row, tokenizer, max_length=512):
+    messages = row["messages"]
+    full = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=False)
+    spans = []
+    for index, message in enumerate(messages):
+        if message["role"] != "assistant":
+            continue
+        if not message["content"].strip():
+            raise ValueError("Resposta assistant vazia.")
+        prefix = tokenizer.apply_chat_template(messages[:index], tokenize=True, add_generation_prompt=True)
+        completed = tokenizer.apply_chat_template(messages[:index + 1], tokenize=True, add_generation_prompt=False)
+        if full[:len(prefix)] != prefix or full[:len(completed)] != completed:
+            raise ValueError("Chat template sem prefixo estável; masking recusado para não treinar tokens user/system.")
+        spans.append((len(prefix), len(completed)))
+    if len(full) > max_length:
+        raise ValueError(f"Diálogo tem {len(full)} tokens e excede --max-length {max_length}. "
+                         "Reduza o exemplo ou aumente o limite; a fonte e os limites não serão truncados silenciosamente.")
+    mask = [1] * len(full)
+    return {"input_ids": full, "attention_mask": mask,
+            "labels": build_assistant_only_labels(full, spans, mask)}
+
+
+def validate_train_validation_split(train_rows, validation_rows):
+    from .prepare_finetuning_dataset import normalized_text
+    def texts(rows, role):
+        return {normalized_text(m["content"]) for row in rows for m in row["messages"] if m["role"] == role}
+    for role in ("user", "assistant"):
+        if texts(train_rows, role) & texts(validation_rows, role):
+            raise ValueError("Vazamento entre treino e validação: texto duplicado.")
+    groups = lambda rows: {r.get("metadata", {}).get("group_id") for r in rows} - {None}
+    if groups(train_rows) & groups(validation_rows):
+        raise ValueError("Vazamento entre treino e validação: famílias compartilhadas.")
+
+
+def epoch_evaluation_kwargs(arguments_class):
+    parameters = inspect.signature(arguments_class).parameters
+    name = "evaluation_strategy" if "evaluation_strategy" in parameters and "eval_strategy" not in parameters else "eval_strategy"
+    return {name: "epoch"}
+
+
 def run_real_finetuning(config: TrainingConfig | None = None,
-                        dataset_path: Path = FINE_TUNING_DATASET_PATH,
-                        output_dir: Path = FINETUNED_DIR) -> Dict[str, Any]:
+                        dataset_path: Path = FINE_TUNING_TRAIN_PATH,
+                        output_dir: Path = EXPERIMENT_02_DIR,
+                        validation_path: Path = FINE_TUNING_VALIDATION_PATH) -> Dict[str, Any]:
     config = config or TrainingConfig()
     config.validate()
+    output_dir, dataset_path, validation_path = Path(output_dir), Path(dataset_path), Path(validation_path)
+    adapter_path = output_dir / "adapter"
+    metadata_path = output_dir / "training_metadata.json"
+    if any((output_dir / name).exists() for name in ("adapter", "training_metadata.json", "checkpoints", "datasets")):
+        raise FileExistsError("Destino de treino já existe. Use --output-dir com outro diretório para preservar a evidência anterior.")
     prerequisites = check_real_dependencies()
     if prerequisites["status"] != "real_finetuning_ready":
         raise RuntimeError(prerequisites["message"] + " Ausentes: " + ", ".join(prerequisites["missing_dependencies"]))
     import torch
     if not torch.cuda.is_available():
         raise RuntimeError("Fine-tuning real requer ambiente com GPU. Recomenda-se Google Colab com CUDA.")
-    # Fail before any download; actual OOM is also handled below.
     free_memory, _ = torch.cuda.mem_get_info()
     if free_memory < 2 * 1024**3:
-        raise RuntimeError("Memória CUDA insuficiente: libere pelo menos 2 GiB; recomenda-se Colab T4. Modelos maiores exigem mais memória.")
-    rows = load_dataset(dataset_path)
-    output_dir = Path(output_dir)
-    adapter_path = output_dir / "adapter"
-    metadata_path = output_dir / "training_metadata.json"
-    if adapter_path.exists() or metadata_path.exists():
-        raise FileExistsError("Destino de treino já existe. Use --output-dir com outro diretório para preservar a evidência anterior.")
+        raise RuntimeError("Memória CUDA insuficiente: libere pelo menos 2 GiB; recomenda-se Colab T4.")
+    rows, validation_rows = load_dataset(dataset_path), load_dataset(validation_path)
+    validate_train_validation_split(rows, validation_rows)
     from datasets import Dataset
     from transformers import (AutoTokenizer, AutoModelForCausalLM, Trainer,
-                              TrainingArguments, DataCollatorForLanguageModeling, set_seed)
+                              TrainingArguments, DataCollatorForSeq2Seq, set_seed)
     from peft import get_peft_model
     started = time.perf_counter()
     try:
-        set_seed(42)
+        set_seed(config.seed)
         tokenizer = AutoTokenizer.from_pretrained(config.model_name)
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
-        # Qwen has a distinct pad token; EOS remains a training target.
-        texts = [tokenizer.apply_chat_template(row["messages"], tokenize=False,
-                                               add_generation_prompt=False) for row in rows]
-        dataset = Dataset.from_dict({"text": texts}).map(
-            lambda batch: tokenizer(batch["text"], truncation=True,
-                                    max_length=config.max_length, add_special_tokens=False),
-            batched=True, remove_columns=["text"])
+        tokenizer.padding_side = "right"
+        train_tokens = [tokenize_conversation(row, tokenizer, config.max_length) for row in rows]
+        val_tokens = [tokenize_conversation(row, tokenizer, config.max_length) for row in validation_rows]
+        dataset = Dataset.from_list(train_tokens)
+        validation_dataset = Dataset.from_list(val_tokens)
+        # Snapshot inputs before training. Test is archived only, never passed to Trainer.
+        snapshot_dir = output_dir / "datasets"
+        snapshot_dir.mkdir(parents=True, exist_ok=False)
+        data_info = {}
+        for name, path in [("train", dataset_path), ("validation", validation_path),
+                           ("test", dataset_path.parent / "fine_tuning_test.jsonl")]:
+            if path.exists():
+                snapshot = snapshot_dir / f"fine_tuning_{name}.jsonl"
+                shutil.copyfile(path, snapshot)
+                data_info[name] = {"path": str(snapshot.resolve()), "size": len(load_dataset(snapshot)),
+                                   "sha256": hashlib.sha256(snapshot.read_bytes()).hexdigest()}
         bf16 = torch.cuda.is_bf16_supported()
         model = AutoModelForCausalLM.from_pretrained(
             config.model_name, torch_dtype=torch.bfloat16 if bf16 else torch.float16)
@@ -150,27 +225,38 @@ def run_real_finetuning(config: TrainingConfig | None = None,
         model.print_trainable_parameters()
         args = TrainingArguments(
             output_dir=str(output_dir / "checkpoints"), num_train_epochs=config.epochs,
-            per_device_train_batch_size=config.batch_size, learning_rate=config.learning_rate,
-            gradient_accumulation_steps=4, gradient_checkpointing=True,
-            gradient_checkpointing_kwargs={"use_reentrant": False},
-            bf16=bf16, fp16=not bf16, logging_steps=1, save_strategy="no",
-            report_to="none", seed=42, dataloader_num_workers=0, optim="adamw_torch")
-        trainer = Trainer(model=model, args=args, train_dataset=dataset,
+            per_device_train_batch_size=config.batch_size, per_device_eval_batch_size=config.batch_size,
+            learning_rate=config.learning_rate, gradient_accumulation_steps=config.gradient_accumulation_steps,
+            gradient_checkpointing=True, gradient_checkpointing_kwargs={"use_reentrant": False},
+            bf16=bf16, fp16=not bf16, logging_steps=1, save_strategy="epoch", save_total_limit=2,
+            load_best_model_at_end=True, metric_for_best_model="eval_loss", greater_is_better=False,
+            label_names=["labels"], prediction_loss_only=True, report_to="none", seed=config.seed,
+            dataloader_num_workers=0, optim="adamw_torch", **epoch_evaluation_kwargs(TrainingArguments))
+        trainer = Trainer(model=model, args=args, train_dataset=dataset, eval_dataset=validation_dataset,
                           processing_class=tokenizer,
-                          data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False))
+                          data_collator=DataCollatorForSeq2Seq(tokenizer=tokenizer, label_pad_token_id=-100,
+                                                              pad_to_multiple_of=8))
         result = trainer.train()
-        # Trainer.training_loss is the mean over optimizer steps, not an evaluation metric.
-        if not math.isfinite(result.training_loss) or result.global_step < 1:
-            raise RuntimeError("Treinamento não produziu loss finita ou passos de otimização.")
+        eval_loss = float(trainer.evaluate()["eval_loss"])
+        best_eval_loss = float(trainer.state.best_metric) if trainer.state.best_metric is not None else eval_loss
+        if not all(math.isfinite(value) for value in (result.training_loss, eval_loss, best_eval_loss)) or result.global_step < 1:
+            raise RuntimeError("Treinamento não produziu losses finitas ou passos de otimização.")
         adapter_path.mkdir(parents=True, exist_ok=False)
-        model.save_pretrained(adapter_path, safe_serialization=True)
+        # Trainer has restored the checkpoint with minimum validation loss.
+        trainer.model.save_pretrained(adapter_path, safe_serialization=True)
         tokenizer.save_pretrained(adapter_path)
         metadata = build_training_metadata(config, rows, result.training_loss,
-                                           time.perf_counter() - started, adapter_path, dataset_path)
-        metadata["last_logged_loss"] = next((x["loss"] for x in reversed(trainer.state.log_history) if "loss" in x), None)
-        metadata["global_steps"] = result.global_step
-        metadata["loss_history"] = trainer.state.log_history
-        metadata["device"] = torch.cuda.get_device_name(0)
+                                           time.perf_counter() - started, adapter_path, snapshot_dir / "fine_tuning_train.jsonl")
+        metadata.update({"experiment": output_dir.name, "loss_masking": "assistant_only",
+                         "eval_loss": eval_loss, "best_eval_loss": best_eval_loss,
+                         "best_checkpoint": trainer.state.best_model_checkpoint,
+                         "validation_size": len(validation_rows), "datasets": data_info,
+                         "dataset_total_size": sum(info["size"] for info in data_info.values()),
+                         "max_observed_tokens": max(len(row["input_ids"]) for row in train_tokens + val_tokens),
+                         "supervised_train_tokens": sum(sum(label != -100 for label in row["labels"]) for row in train_tokens),
+                         "last_logged_loss": next((x["loss"] for x in reversed(trainer.state.log_history) if "loss" in x), None),
+                         "global_steps": result.global_step, "loss_history": trainer.state.log_history,
+                         "device": torch.cuda.get_device_name(0)})
         metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
         return metadata
     except torch.cuda.OutOfMemoryError as exc:
@@ -179,19 +265,25 @@ def run_real_finetuning(config: TrainingConfig | None = None,
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fine-tuning acadêmico da Fase 3.")
+    parser = argparse.ArgumentParser(description="Fine-tuning acadêmico da Fase 3 — Experimento 02.")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--mock", action="store_true", help="Validação local; não treina pesos.")
     group.add_argument("--real", action="store_true", help="Executa treinamento LoRA em GPU CUDA.")
     for name, kind in [("model_name", str), ("epochs", float), ("batch_size", int),
-                       ("learning_rate", float), ("max_length", int), ("lora_r", int), ("lora_alpha", int)]:
+                       ("learning_rate", float), ("max_length", int), ("lora_r", int), ("lora_alpha", int),
+                       ("lora_dropout", float), ("gradient_accumulation_steps", int), ("seed", int)]:
         parser.add_argument("--" + name.replace("_", "-"), type=kind, default=getattr(TrainingConfig(), name))
-    parser.add_argument("--dataset-path", type=Path, default=FINE_TUNING_DATASET_PATH)
-    parser.add_argument("--output-dir", type=Path, default=FINETUNED_DIR)
+    parser.add_argument("--dataset-path", type=Path, default=None)
+    parser.add_argument("--validation-path", type=Path, default=FINE_TUNING_VALIDATION_PATH)
+    parser.add_argument("--output-dir", type=Path, default=EXPERIMENT_02_DIR)
     args = parser.parse_args()
     try:
-        config = TrainingConfig(**{name: getattr(args, name) for name in TrainingConfig.__dataclass_fields__ if hasattr(args, name)})
-        result = run_mock_finetuning(args.dataset_path) if args.mock else run_real_finetuning(config, args.dataset_path, args.output_dir)
+        config = TrainingConfig(**{name: getattr(args, name) for name in TrainingConfig.__dataclass_fields__})
+        if args.mock:
+            result = run_mock_finetuning(args.dataset_path or FINE_TUNING_DATASET_PATH)
+        else:
+            result = run_real_finetuning(config, args.dataset_path or FINE_TUNING_TRAIN_PATH,
+                                         args.output_dir, args.validation_path)
     except (RuntimeError, OSError, ValueError, ImportError) as exc:
         parser.exit(1, f"Fine-tuning não concluído: {exc}\n")
     print(json.dumps(result, ensure_ascii=False, indent=2))

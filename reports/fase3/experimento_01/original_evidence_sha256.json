@@ -1,0 +1,16 @@
+{
+  "models/fase3/fine_tuned/mock_finetuned_model.json": "6a5efd17c04980cd8f81c7bcf002e443bdfb68b44ba8590b3d3b3bc6e1e69b39",
+  "models/fase3/fine_tuned/training_metadata.json": "71a0a7c44c29f37a80ac8645f8c8f02e6b4bd791a6af82ca181528d3aafdc9f8",
+  "models/fase3/fine_tuned/adapter/adapter_config.json": "70a20d0cfd5be1f6df3e628d182a935c67e562ea71700c005d53b3258fff2a45",
+  "models/fase3/fine_tuned/adapter/adapter_model.safetensors": "2b9ba0a5d2084493e4fde7a3bcebc133c394bf9354452a8d4c50412e6ea5f469",
+  "models/fase3/fine_tuned/adapter/added_tokens.json": "58b54bbe36fc752f79a24a271ef66a0a0830054b4dfad94bde757d851968060b",
+  "models/fase3/fine_tuned/adapter/chat_template.jinja": "cd8e9439f0570856fd70470bf8889ebd8b5d1107207f67a5efb46e342330527f",
+  "models/fase3/fine_tuned/adapter/merges.txt": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5",
+  "models/fase3/fine_tuned/adapter/README.md": "6b95375f507809c480d15e683ecaf6c69fe91a26adef775e1ce4032df12c7d56",
+  "models/fase3/fine_tuned/adapter/special_tokens_map.json": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+  "models/fase3/fine_tuned/adapter/tokenizer.json": "962b8d8c521fefa934665afddae177326e974ddd6a26e69ff31ad6bccbb5593b",
+  "models/fase3/fine_tuned/adapter/tokenizer_config.json": "0a04a9d7d4a62b28482bdfe726c122756de85714fb64166ace92ae75b8f57614",
+  "models/fase3/fine_tuned/adapter/vocab.json": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910",
+  "reports/fase3/fine_tuning_evaluation.json": "8ba55f2783df99366331417bdb4fd95fc196f0f7c2522199f83386440b5849f1",
+  "reports/fase3/fine_tuning_evaluation.csv": "2d370576415779bbd2dcd5f1f47961be4537af1e00dfedce6816ef6b9f303bf3"
+}

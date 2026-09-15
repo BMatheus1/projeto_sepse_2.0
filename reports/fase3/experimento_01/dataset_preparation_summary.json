@@ -1,0 +1,24 @@
+{
+  "records_read": 129,
+  "valid_records": 129,
+  "discarded_records": 0,
+  "sources": [
+    "faq_sepse_sintetico",
+    "templates_locais_triagem",
+    "templates_locais_exames",
+    "templates_locais_alertas",
+    "templates_locais_faq",
+    "templates_locais_recusas",
+    "templates_locais_limites",
+    "templates_locais_prontuario",
+    "templates_locais_pendentes",
+    "modelo_resposta_triagem",
+    "modelo_resposta_alerta",
+    "modelo_resposta_segura",
+    "protocolo_sepse_triagem",
+    "protocolo_sepse_exames",
+    "protocolo_sepse_alertas"
+  ],
+  "generated_at": "2026-09-15T18:10:41.332760+00:00",
+  "dataset_path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_dataset.jsonl"
+}

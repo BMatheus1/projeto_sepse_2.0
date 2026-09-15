@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -27,3 +27,9 @@ DEFAULT_BASE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 FINETUNED_DIR = ROOT / "models" / "fase3" / "fine_tuned"
 ADAPTER_PATH = FINETUNED_DIR / "adapter"
 TRAINING_METADATA_PATH = FINETUNED_DIR / "training_metadata.json"
+
+FINE_TUNING_TRAIN_PATH = PROCESSED_DATA_DIR / "fine_tuning_train.jsonl"
+FINE_TUNING_VALIDATION_PATH = PROCESSED_DATA_DIR / "fine_tuning_validation.jsonl"
+FINE_TUNING_TEST_PATH = PROCESSED_DATA_DIR / "fine_tuning_test.jsonl"
+EXPERIMENT_02_DIR = ROOT / "models" / "fase3" / "experimento_02"
+EXPERIMENT_02_ADAPTER_PATH = EXPERIMENT_02_DIR / "adapter"

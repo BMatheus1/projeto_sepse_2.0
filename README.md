@@ -292,27 +292,26 @@ A primeira execução real baixa o modelo público do Hugging Face, sem chave de
 pip install -r requirements-finetuning.txt
 python -m src.tc_fase3.generate_synthetic_finetuning_data
 python -m src.tc_fase3.prepare_finetuning_dataset
-python -m src.tc_fase3.train_finetune --real --model-name Qwen/Qwen2.5-0.5B-Instruct --epochs 1 --batch-size 1 --learning-rate 2e-4 --max-length 512 --lora-r 8 --lora-alpha 16
+python -m src.tc_fase3.train_finetune --real --model-name Qwen/Qwen2.5-0.5B-Instruct --output-dir models/fase3/experimento_02 --epochs 3 --batch-size 1 --learning-rate 1e-4 --max-length 512 --lora-r 16 --lora-alpha 32
 python -m src.tc_fase3.evaluate_finetuned_model --update-report
 ```
 
 Saídas:
 
-- `models/fase3/fine_tuned/adapter/`: pesos LoRA, configuração e tokenizer.
-- `models/fase3/fine_tuned/training_metadata.json`: configuração executada, SHA-256 do dataset, loss média, última loss registrada, histórico, tempo e GPU.
-- `reports/fase3/fine_tuning_evaluation.json` e `.csv`: respostas brutas base versus adapter em 10 prompts, com heurísticas de segurança, fontes, português e aderência lexical.
+- `models/fase3/experimento_02/adapter/`: novos pesos LoRA, configuração e tokenizer; `fine_tuned/` preserva o Experimento 01.
+- `models/fase3/experimento_02/training_metadata.json`: configuração, hashes dos splits, train/eval/best_eval_loss, histórico, tempo e GPU.
+- `reports/fase3/experimento_02/fine_tuning_evaluation.json` e `.csv`: respostas brutas base versus adapter em 20 prompts, com heurísticas corrigidas, score agregado e delta. Os arquivos originais da avaliação v1 ficam preservados.
 
-Configuração padrão: 129 exemplos (120 novos + 9 preservados), LoRA em `q_proj`/`v_proj`,
-`r=8`, `alpha=16`, dropout `0.05`, 1 epoch, batch 1, acumulação 4, learning rate `2e-4`,
-comprimento 512 e seed 42. Usa `transformers.Trainer` e PEFT; TRL está nas dependências opcionais,
-mas não é necessário ao Trainer escolhido. Treina previsão causal sobre o diálogo completo,
-com padding mascarado; não é treinamento restrito às respostas do assistente.
-`train_loss` é a média dos passos de otimização; `last_logged_loss` é a última loss registrada.
-Não há estimativa de generalização a partir da loss de treino.
+Configuração atual (Experimento 02): 349 exemplos, divididos em 279 treino / 35 validação /
+35 teste por famílias com seed 42. LoRA em `q_proj`/`v_proj`, r=16, alpha=32, dropout=0.05,
+3 epochs, batch 1, acumulação 4, learning rate 1e-4 e comprimento 512.
+Loss somente nos tokens assistant, com avaliação por epoch e restauração do melhor checkpoint.
+`train_loss` é média de treino, `eval_loss` avalia o adapter selecionado e `best_eval_loss`
+registra a menor loss de validação. O teste não seleciona checkpoints.
 
 O comando falha claramente sem CUDA, com dependências ausentes ou memória insuficiente.
-Para repetir sem sobrescrever evidências, use `--output-dir models/fase3/experimento_02`;
-na avaliação correspondente, use `--adapter-path models/fase3/experimento_02/adapter`.
+Para repetir sem sobrescrever evidências, escolha um diretório novo, por exemplo `--output-dir models/fase3/experimento_03`;
+na avaliação correspondente, use o caminho de adapter do diretório escolhido.
 `bitsandbytes` é recomendado apenas para Linux/Colab e tem marcador de plataforma;
 o treinamento padrão do modelo 0.5B não utiliza quantização. Windows local usa fallback sem essas dependências.
 Os pesos grandes são ignorados pelo Git; baixe e preserve o ZIP de evidências produzido pelo notebook.
@@ -334,13 +333,12 @@ sem artefato/dependência ou em falha/reprovação da geração, retorna `templa
 Perguntas bloqueadas são recusadas antes da LLM. O retriever local não usa embeddings nem serviços externos.
 A API e a auditoria também expõem o modo de geração. A Fase 3 não depende de OpenAI.
 
-Após copiar o adapter do Colab para `models/fase3/fine_tuned/adapter/`, execute a demo ou API normalmente.
+O adapter do Experimento 01 permanece em `models/fase3/fine_tuned/adapter/`. Para usar o Experimento 02 exportado do Colab, mantenha-o no diretório próprio e configure `FASE3_ADAPTER_PATH` conforme a seção final.
 Para outro caminho, configure `FASE3_ADAPTER_PATH`; o modelo base é lido do adapter.
 `FASE3_BASE_MODEL` permite override explícito, mas precisa corresponder ao modelo do adapter.
 Inferência usa CUDA quando disponível ou CPU (mais lenta e sujeita à memória disponível).
 
-**Estado das evidências:** treinamento GPU e comparação com pesos reais ainda pendentes.
-Os testes com mocks comprovam o encadeamento de software, não qualidade ou execução real do treinamento.
+**Estado das evidências:** Experimento 01 treinado em Tesla T4, loss média 2.6876, sem melhora global na avaliação original. Experimento 02 preparado e pendente de execução. Os testes de software não comprovam melhora do modelo.
 
 ## Como rodar demo
 
@@ -423,7 +421,8 @@ Cada evento registra timestamp, paciente, pergunta, nós executados, fontes cons
 - [x] Dataset JSONL conversacional gerado.
 - [x] Fine-tuning mock implementado.
 - [x] Treinamento real LoRA implementado.
-- [ ] Execução GPU, adapter real e comparação antes/depois comprovados.
+- [x] Experimento 01: execução GPU, adapter real e comparação antes/depois comprovados.
+- [ ] Experimento 02: treino GPU e comparação v2 dos três modelos.
 - [x] Assistente médico acadêmico implementado.
 - [x] Consulta a pacientes e protocolos implementada.
 - [x] Integração com modelo da Fase 2 ou fallback clínico implementada.
@@ -433,3 +432,40 @@ Cada evento registra timestamp, paciente, pergunta, nós executados, fontes cons
 - [x] Demo, avaliação, notebook e relatório criados.
 - [x] Testes automatizados adicionados.
 
+
+
+## Experimento 02 — Ajuste orientado por erros
+
+O gerador produz 340 novos exemplos, incluindo fontes exatas, validação humana,
+recusas e prompt injection; os nove legados são preservados. Saídas em seis seções
+ensinam dados do paciente, resultado do modelo, protocolo, inferência, limites e fonte.
+Paráfrases da mesma família permanecem no mesmo split. O resumo traz contagens por categoria
+em `reports/fase3/dataset_preparation_summary.json`.
+
+```bash
+python -m src.tc_fase3.generate_synthetic_finetuning_data
+python -m src.tc_fase3.prepare_finetuning_dataset
+python -m pytest -q
+# Execute os comandos abaixo no Colab/GPU, após instalar requirements-finetuning.txt:
+python -m src.tc_fase3.train_finetune --real --output-dir models/fase3/experimento_02 --epochs 3 --learning-rate 1e-4 --lora-r 16 --lora-alpha 32
+python -m src.tc_fase3.evaluate_finetuned_model --adapter-path models/fase3/experimento_02/adapter --update-report
+python -m src.tc_fase3.evaluate_finetuned_model --compare-experiments --adapter-path models/fase3/experimento_02/adapter --update-report
+```
+
+A comparação carrega base, Experimento 01 e Experimento 02 sequencialmente. Para o
+Experimento 01 em outro diretório, passe `--experiment-01-path CAMINHO/adapter`.
+Preserve a pasta original `models/fase3/fine_tuned/` e importe-a no Colab para comparar.
+As saídas são `reports/fase3/fine_tuning_comparison_experiments.json/csv`.
+Se faltar adapter, o resultado registra pendência e scores nulos, sem inventar inferências.
+Para repetir uma avaliação concluída, escolha novo `--output-dir`.
+
+Depois de treinar e copiar o Experimento 02 para Windows, selecione-o explicitamente:
+
+```powershell
+$env:FASE3_ADAPTER_PATH = "D:\projeto_sepse_2.0\models\fase3\experimento_02\adapter"
+python -m uvicorn src.tc_fase3.api:app --port 8001
+```
+
+O Experimento 01 permanece como backend padrão até essa seleção explícita.
+Não comparar diretamente taxas antigas dos 10 prompts/v1 com as novas de 20 prompts/v2.
+Melhora ou piora do Experimento 02 só será determinada após execução e revisão das respostas brutas.

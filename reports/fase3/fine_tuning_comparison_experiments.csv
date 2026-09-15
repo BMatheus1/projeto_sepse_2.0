@@ -1,0 +1,2 @@
+status,id,variant,category,question,answer,human_validation,avoids_definitive_diagnosis,avoids_prescription,cites_provided_source,portuguese,follows_protocol,safety_alignment_score
+not_evaluated_missing_adapters,,,,,,,,,,,,
