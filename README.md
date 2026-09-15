@@ -214,3 +214,152 @@ O notebook contém tabelas, explicações em Markdown e gráficos simples em `ma
 
 ### Github: https://github.com/BMatheus1/projeto_sepse_2.0
 ### Youtube: https://www.youtube.com/watch?v=yUAQ6P2zKBM
+
+# Tech Challenge Fase 3 - Assistente Médico de Sepse
+
+## Objetivo
+
+A Fase 3 evolui o projeto da Fase 2 para um assistente médico acadêmico de apoio à triagem de sepse. A solução usa dados internos sintéticos, curadoria para fine-tuning, consulta a pacientes sintéticos, protocolos internos sintéticos, validação de segurança, auditoria e respostas explicáveis com fontes.
+
+## Arquitetura
+
+```mermaid
+flowchart TD
+    A[Dados sintéticos] --> B[Preprocessing e anonimização]
+    B --> C[Dataset de fine-tuning]
+    C --> D[Fine-tuning mock]
+    E[Paciente sintético] --> F[Assistente Fase 3]
+    G[Protocolos sintéticos] --> F
+    H[Modelo otimizado Fase 2 ou fallback clínico] --> F
+    F --> I[Validação de segurança]
+    I --> J[Resposta com fontes]
+    I --> K[Log de auditoria]
+```
+
+## Estrutura da Fase 3
+
+```text
+data/fase3/
+|-- raw/
+|-- processed/
+`-- synthetic/
+knowledge_base/protocolos/
+src/tc_fase3/
+reports/fase3/
+logs/fase3_assistant_audit.log
+notebook/fase3_demo_assistente.ipynb
+tests/test_fase3_*.py
+```
+
+## Como gerar dataset de fine-tuning
+
+```bash
+python -m src.tc_fase3.prepare_finetuning_dataset
+```
+
+Saídas:
+
+- `data/fase3/processed/fine_tuning_dataset.jsonl`
+- `reports/fase3/dataset_preparation_summary.json`
+
+## Como rodar fine-tuning mock
+
+```bash
+python -m src.tc_fase3.train_finetune --mock
+```
+
+Saída:
+
+- `models/fase3/fine_tuned/mock_finetuned_model.json`
+
+O modo real opcional está estruturado com `--real`, mas não baixa modelos pesados automaticamente e depende de ambiente adequado.
+
+## Como rodar demo
+
+```bash
+python -m src.tc_fase3.run_demo
+```
+
+Saída:
+
+- `reports/fase3/demo_outputs.json`
+
+## Como rodar avaliação
+
+```bash
+python -m src.tc_fase3.evaluate_assistant
+```
+
+Saídas:
+
+- `reports/fase3/avaliacao_assistente.csv`
+- `reports/fase3/avaliacao_assistente.json`
+
+## Como rodar API da Fase 3
+
+```bash
+uvicorn src.tc_fase3.api:app --reload
+```
+
+Endpoints:
+
+- `GET /fase3/health`
+- `POST /fase3/assistant/ask`
+- `POST /fase3/assistant/flow`
+- `GET /fase3/logs/latest`
+
+## Como rodar testes
+
+```bash
+pytest
+```
+
+Os testes da Fase 3 passam sem chave OpenAI, sem GPU e sem dependências pesadas opcionais.
+
+## Segurança e limitações
+
+- Dados e protocolos são sintéticos e usados apenas para fins acadêmicos.
+- O assistente não prescreve medicamentos, doses ou condutas terapêuticas diretas.
+- O assistente não fecha diagnóstico definitivo.
+- Toda resposta exige validação humana obrigatória.
+- Respostas devem citar fontes e diferenciar dados do paciente, protocolos e inferências.
+- Fine-tuning real é opcional; o modo padrão é mock e reprodutível localmente.
+
+## Logs
+
+As interações são registradas em:
+
+- `logs/fase3_assistant_audit.log`
+
+Cada evento registra timestamp, paciente, pergunta, nós executados, fontes consultadas, nível de risco, modelo usado, status de segurança e exigência de validação humana.
+
+## Entregáveis
+
+- Dataset sintético/anonimizado para fine-tuning.
+- Pipeline de preprocessing e curadoria.
+- Fine-tuning mock e modo real opcional.
+- Assistente com compatibilidade LangChain.
+- Fluxo LangGraph ou fallback sequencial documentado.
+- API FastAPI da Fase 3.
+- Demo automatizada.
+- Avaliação do assistente.
+- Relatório técnico da Fase 3.
+- Testes automatizados.
+
+## Checklist da Fase 3
+
+- [x] Dados sintéticos criados.
+- [x] Protocolos internos sintéticos criados.
+- [x] Preprocessing, anonimização e curadoria implementados.
+- [x] Dataset JSONL conversacional gerado.
+- [x] Fine-tuning mock implementado.
+- [x] Modo real opcional preparado.
+- [x] Assistente médico acadêmico implementado.
+- [x] Consulta a pacientes e protocolos implementada.
+- [x] Integração com modelo da Fase 2 ou fallback clínico implementada.
+- [x] Segurança, logging e auditoria implementados.
+- [x] Fluxo LangGraph/fallback sequencial implementado.
+- [x] API FastAPI da Fase 3 implementada.
+- [x] Demo, avaliação, notebook e relatório criados.
+- [x] Testes automatizados adicionados.
+

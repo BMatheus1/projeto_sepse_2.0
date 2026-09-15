@@ -2,10 +2,12 @@
 __pycache__/
 .pytest_cache/
 .tmp_pytest/
+.tmp_pytest*/
 *.pyc
 .env
 .env.local
 .ipynb_checkpoints/
 logs/*.log
+!logs/fase3_assistant_audit.log
 models/*.pkl
 reports/*.png

@@ -1,0 +1,8 @@
+{
+  "base_model": "modelo-base-simulado-llm-medico-academico",
+  "examples": 9,
+  "created_at": "2026-09-14T19:29:24.698306+00:00",
+  "dataset_path": "C:\\Users\\Mathe\\Área de Trabalho\\projects\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_dataset.jsonl",
+  "status": "mock_finetuning_completed",
+  "note": "Simulação acadêmica reproduzível; nenhum modelo pesado foi treinado."
+}

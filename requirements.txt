@@ -13,3 +13,6 @@ matplotlib
 seaborn
 pytest
 openai
+langchain
+langchain-core
+langgraph

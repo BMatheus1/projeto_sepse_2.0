@@ -1,0 +1,16 @@
+{
+  "records_read": 9,
+  "valid_records": 9,
+  "discarded_records": 0,
+  "sources": [
+    "faq_sepse_sintetico",
+    "modelo_resposta_triagem",
+    "modelo_resposta_alerta",
+    "modelo_resposta_segura",
+    "protocolo_sepse_triagem",
+    "protocolo_sepse_exames",
+    "protocolo_sepse_alertas"
+  ],
+  "generated_at": "2026-09-14T19:36:49.257537+00:00",
+  "dataset_path": "C:\\Users\\Mathe\\Área de Trabalho\\projects\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_dataset.jsonl"
+}
