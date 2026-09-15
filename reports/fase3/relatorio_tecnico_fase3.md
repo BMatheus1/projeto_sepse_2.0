@@ -4,6 +4,8 @@
 
 A Fase 3 evolui o projeto de detecção de sepse da Fase 2 para um assistente médico acadêmico de apoio à triagem. A solução preserva a API FastAPI, o modelo otimizado, o Algoritmo Genético e os relatórios anteriores, adicionando uma camada modular para consulta a pacientes sintéticos, protocolos internos sintéticos, explicabilidade, segurança, logging e fluxo automatizado.
 
+Os Experimentos 01 e 02 concluíram treinamento real. A avaliação Base x Exp02 foi concluída; a comparação v2 dos três modelos permanece pendente pela ausência do adapter 01 no runtime.
+
 ## 2. Objetivo
 
 Criar um assistente médico para apoio à triagem de sepse, capaz de consultar dados estruturados de pacientes sintéticos, recuperar protocolos internos sintéticos, estimar risco com o modelo da Fase 2 ou fallback clínico, responder em português com fontes e exigir validação humana obrigatória.
@@ -26,13 +28,13 @@ com Hugging Face Trainer e PEFT/LoRA, após verificar dependências opcionais, C
 Aplica o chat template do tokenizer, treina, salva adapter e tokenizer e registra metadata
 somente após o término bem-sucedido. O destino existente é protegido contra sobrescrita.
 
-Modelo base: `Qwen/Qwen2.5-0.5B-Instruct`. Parâmetros propostos: 1 epoch, batch 1,
+Modelo base: `Qwen/Qwen2.5-0.5B-Instruct`. Parâmetros executados no Experimento 01: 1 epoch, batch 1,
 learning rate 2e-4, comprimento 512, r=8, alpha=16, dropout=0.05, módulos q_proj/v_proj,
 acumulação de gradientes 4 e seed 42. Treinamento sobre o diálogo inteiro (padding mascarado),
 sem split de validação; a loss é de treino e não demonstra generalização.
 `train_loss` é a média dos passos; `last_logged_loss` e `loss_history` registram a evolução.
 
-O Experimento 01 foi executado em Tesla T4: 33 passos, loss média 2.6875706947211064, última loss 2.4721 e tempo de 60.31 segundos. Adapter e metadata reais estão em `models/fase3/fine_tuned/`. As evidências originais estão preservadas; a execução do Experimento 02 permanece pendente.
+O Experimento 01 foi executado em Tesla T4: 33 passos, loss média 2.6875706947211064, última loss 2.4721 e tempo de 60.31 segundos. Adapter e metadata reais estão em `models/fase3/fine_tuned/`. As evidências originais estão preservadas; o Experimento 02 também concluiu treino real em Tesla T4 e avaliação v2 contra a base, conforme as métricas abaixo.
 
 O notebook `notebook/fase3_finetuning_colab.ipynb` contém instalação, dataset, LoRA,
 treinamento, inspeção da loss, comparação qualitativa e exportação das evidências.
@@ -116,15 +118,15 @@ Resultados atuais em `reports/fase3/avaliacao_assistente.json`:
 
 ## 12. Limitações
 
-Os dados e protocolos são sintéticos e acadêmicos. Não houve validação clínica real ou prospectiva. O Experimento 01 concluiu treinamento e avaliação reais, sem melhora global. O Experimento 02 ainda precisa ser executado. As heurísticas lexicais e os filtros de geração não garantem segurança, idioma ou aderência clínica. A suíte v2 tem 20 prompts sem sobreposição literal com o treino. Como o desenvolvimento foi orientado pelos erros do Experimento 01, ela é uma avaliação de desenvolvimento, não validação clínica independente. O uso real exigiria validação externa, governança clínica, monitoramento contínuo, auditoria institucional e revisão por profissionais habilitados.
+Os dados e protocolos são sintéticos e acadêmicos. Não houve validação clínica real ou prospectiva. O Experimento 01 concluiu treinamento e avaliação reais, sem melhora global. O Experimento 02 concluiu treino e avaliação v2: score heurístico de 0.525 para 0.725, ganho de 0,20. As respostas brutas ainda apresentam falhas: human_validation = 0.30 e avoids_definitive_diagnosis = 0.90 (base = 0.95 neste último critério). As heurísticas lexicais e os filtros de geração não garantem segurança, idioma ou aderência clínica. A suíte v2 tem 20 prompts sem sobreposição literal com o treino. Como o desenvolvimento foi orientado pelos erros do Experimento 01, ela é uma avaliação de desenvolvimento, não validação clínica independente. O uso real exigiria validação externa, governança clínica, monitoramento contínuo, auditoria institucional e revisão por profissionais habilitados.
 
 ## 13. Conclusão
 
 A Fase 2 e os componentes existentes foram preservados. A implementação passa a oferecer
 LoRA real e orquestração LangChain com backend PEFT local, mantendo execução de validação
-sem GPU. O Experimento 01 comprovou treinamento real; os resultados não demonstraram melhora global. O Experimento 02 está preparado e exige nova execução GPU e comparação honesta antes de qualquer conclusão de melhora.
+sem GPU. O Experimento 01 comprovou treinamento real; os resultados não demonstraram melhora global. O Experimento 02 concluiu treino real e avaliação Base x Exp02, com ganho de 0,20 no safety_alignment_score da suíte heurística v2. Esse resultado acadêmico não representa melhora clínica. A comparação Base x Exp01 x Exp02 permanece pendente exclusivamente pela ausência do adapter 01 no runtime, registrada no JSON como not_evaluated_missing_adapters.
 
-Para atualizar esta seção de evidências após o treinamento:
+Comando de avaliação documentado para reprodução (a avaliação Base x Exp02 já está concluída e protegida contra sobrescrita):
 
 ```bash
 python -m src.tc_fase3.evaluate_finetuned_model --update-report
@@ -250,7 +252,7 @@ com menor eval_loss e salva `train_loss`, `eval_loss` e `best_eval_loss`. O conj
 é reservado e apenas copiado como evidência; não participa de gradientes nem da seleção
 do checkpoint. Os 20 prompts de avaliação qualitativa são um conjunto separado do JSONL de teste.
 
-### Configuração planejada
+### Configuração executada
 
 Qwen/Qwen2.5-0.5B-Instruct; epochs=3; batch_size=1; gradient_accumulation_steps=4;
 learning_rate=1e-4; max_length=512; lora_r=16; lora_alpha=32; lora_dropout=0.05; seed=42.
@@ -288,7 +290,7 @@ python -m src.tc_fase3.evaluate_finetuned_model --compare-experiments --adapter-
 
 O notebook atualizado executa esse fluxo e exporta as evidências. Os blocos abaixo são
 atualizados automaticamente por `--update-report`, preservando os resultados do Experimento 01.
-**Não há resultado ou afirmação de melhora do Experimento 02 antes de sua execução.**
+O Experimento 02 concluiu 210 passos em Tesla T4; o melhor checkpoint foi `checkpoint-210`. Os resultados reais registrados abaixo são a fonte desta análise. Não foi necessário novo treinamento para este acabamento.
 
 
 <!-- EXPERIMENT_02_RESULTS_START -->
@@ -343,5 +345,22 @@ Um delta negativo indica piora. Revisão qualitativa das respostas brutas ainda 
 
 - Avaliação: not_evaluated_missing_adapters.
 - Versão do avaliador: 2.0.
-- Scores, delta e comparação qualitativa: Pendente de execução.
+- Scores, delta e comparação qualitativa: pendentes exclusivamente pela ausência do adapter do Experimento 01 no runtime (`missing_adapters = ["experiment_01"]`).
 <!-- EXPERIMENT_COMPARISON_END -->
+
+## Preservação e reprodução das evidências
+
+Os adapters reais são preservados no ZIP do Colab; os pesos permanecem ignorados pelo Git.
+Metadata, hashes e avaliações originais não foram alterados. Os caminhos `/content/...`
+registram o ambiente histórico. `git_revision.txt` mantém a revisão
+`44afa814f29786f89faddf0d61a66aabe577b270` registrada para o treino do Experimento 02,
+sem substituição pelo commit posterior de documentação.
+O snapshot de pacotes foi identificado em `reports/fase3/colab_environment_snapshot.txt`;
+as dependências oficiais continuam em `requirements.txt` e `requirements-finetuning.txt`.
+
+Para completar a comparação, a seção opcional 13.1 do notebook aceita o ZIP original
+do adapter 01, valida configuração e pesos e importa em `models/fase3/fine_tuned/adapter/`
+sem sobrescrever arquivos existentes. O adapter 02 deve estar em
+`models/fase3/experimento_02/adapter/`. Essa seção pode ser executada após instalação
+ e clone, sem executar treinamento. A comparação usa a mesma suíte v2 e preserva
+resultados concluídos; até sua execução, o status de ausência do adapter 01 permanece válido.

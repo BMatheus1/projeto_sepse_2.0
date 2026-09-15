@@ -39,10 +39,10 @@ def test_mock_preserves_contract_without_real_training(tmp_path, monkeypatch):
     assert "train_loss" not in json.loads(artifact.read_text(encoding="utf-8"))
 
 
-def test_missing_dependencies_message(monkeypatch):
+def test_missing_dependencies_message(monkeypatch, tmp_path):
     monkeypatch.setattr(ft.importlib, "import_module", Mock(side_effect=ImportError("absent")))
     with pytest.raises(RuntimeError, match="requirements-finetuning.txt"):
-        ft.run_real_finetuning()
+        ft.run_real_finetuning(output_dir=tmp_path / "training")
 
 
 @pytest.fixture

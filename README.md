@@ -310,8 +310,7 @@ Loss somente nos tokens assistant, com avaliação por epoch e restauração do 
 registra a menor loss de validação. O teste não seleciona checkpoints.
 
 O comando falha claramente sem CUDA, com dependências ausentes ou memória insuficiente.
-Para repetir sem sobrescrever evidências, escolha um diretório novo, por exemplo `--output-dir models/fase3/experimento_03`;
-na avaliação correspondente, use o caminho de adapter do diretório escolhido.
+O treinamento do Experimento 02 já está concluído. Os comandos de treino acima documentam sua reprodução; não são necessários para consultar os resultados ou completar a comparação dos três modelos.
 `bitsandbytes` é recomendado apenas para Linux/Colab e tem marcador de plataforma;
 o treinamento padrão do modelo 0.5B não utiliza quantização. Windows local usa fallback sem essas dependências.
 Os pesos grandes são ignorados pelo Git; baixe e preserve o ZIP de evidências produzido pelo notebook.
@@ -338,7 +337,7 @@ Para outro caminho, configure `FASE3_ADAPTER_PATH`; o modelo base é lido do ada
 `FASE3_BASE_MODEL` permite override explícito, mas precisa corresponder ao modelo do adapter.
 Inferência usa CUDA quando disponível ou CPU (mais lenta e sujeita à memória disponível).
 
-**Estado das evidências:** Experimento 01 treinado em Tesla T4, loss média 2.6876, sem melhora global na avaliação original. Experimento 02 preparado e pendente de execução. Os testes de software não comprovam melhora do modelo.
+**Estado das evidências:** Experimento 01 treinado em Tesla T4, loss média 2.6876, sem melhora global na avaliação original. Experimento 02 treinado em Tesla T4 e avaliado contra o modelo base na suíte v2: safety_alignment_score de 0.525 para 0.725, ganho de +0.20. Trata-se de métrica heurística acadêmica, sem validação clínica. A comparação v2 dos três modelos permanece pendente exclusivamente pela ausência do adapter 01 no runtime da avaliação. Os testes de software não comprovam melhora do modelo.
 
 ## Como rodar demo
 
@@ -389,7 +388,7 @@ Os testes da Fase 3 passam sem chave OpenAI, sem GPU e sem dependências pesadas
 - O assistente não fecha diagnóstico definitivo.
 - Toda resposta exige validação humana obrigatória.
 - Respostas devem citar fontes e diferenciar dados do paciente, protocolos e inferências.
-- O treinamento real é necessário para concluir a entrega; o mock permite apenas validação local sem GPU.
+- Os Experimentos 01 e 02 concluíram treinamento real; o mock permite apenas validação local sem GPU.
 - Filtros por padrões e métricas lexicais não garantem segurança clínica; dados sintéticos e respostas requerem revisão humana.
 
 ## Logs
@@ -422,7 +421,9 @@ Cada evento registra timestamp, paciente, pergunta, nós executados, fontes cons
 - [x] Fine-tuning mock implementado.
 - [x] Treinamento real LoRA implementado.
 - [x] Experimento 01: execução GPU, adapter real e comparação antes/depois comprovados.
-- [ ] Experimento 02: treino GPU e comparação v2 dos três modelos.
+- [x] Experimento 02: treino GPU real em Tesla T4.
+- [x] Experimento 02: avaliação Base x Exp02 concluída.
+- [ ] Comparação v2 Base x Exp01 x Exp02: adapter 01 ausente no runtime.
 - [x] Assistente médico acadêmico implementado.
 - [x] Consulta a pacientes e protocolos implementada.
 - [x] Integração com modelo da Fase 2 ou fallback clínico implementada.
@@ -446,7 +447,7 @@ em `reports/fase3/dataset_preparation_summary.json`.
 python -m src.tc_fase3.generate_synthetic_finetuning_data
 python -m src.tc_fase3.prepare_finetuning_dataset
 python -m pytest -q
-# Execute os comandos abaixo no Colab/GPU, após instalar requirements-finetuning.txt:
+# Histórico de reprodução do treino já concluído; não reexecutar para completar a comparação:
 python -m src.tc_fase3.train_finetune --real --output-dir models/fase3/experimento_02 --epochs 3 --learning-rate 1e-4 --lora-r 16 --lora-alpha 32
 python -m src.tc_fase3.evaluate_finetuned_model --adapter-path models/fase3/experimento_02/adapter --update-report
 python -m src.tc_fase3.evaluate_finetuned_model --compare-experiments --adapter-path models/fase3/experimento_02/adapter --update-report
@@ -459,13 +460,58 @@ As saídas são `reports/fase3/fine_tuning_comparison_experiments.json/csv`.
 Se faltar adapter, o resultado registra pendência e scores nulos, sem inventar inferências.
 Para repetir uma avaliação concluída, escolha novo `--output-dir`.
 
-Depois de treinar e copiar o Experimento 02 para Windows, selecione-o explicitamente:
+Depois de copiar o adapter já treinado do Experimento 02 para Windows, selecione-o explicitamente:
 
 ```powershell
-$env:FASE3_ADAPTER_PATH = "D:\projeto_sepse_2.0\models\fase3\experimento_02\adapter"
+$env:FASE3_ADAPTER_PATH = "models/fase3/experimento_02/adapter"
 python -m uvicorn src.tc_fase3.api:app --port 8001
 ```
 
 O Experimento 01 permanece como backend padrão até essa seleção explícita.
 Não comparar diretamente taxas antigas dos 10 prompts/v1 com as novas de 20 prompts/v2.
-Melhora ou piora do Experimento 02 só será determinada após execução e revisão das respostas brutas.
+O Experimento 02 apresentou ganho de 0,20 no safety_alignment_score da suíte heurística v2. A revisão humana das respostas brutas continua necessária: human_validation = 0.30 e avoids_definitive_diagnosis = 0.90. Isso não equivale a desempenho ou segurança clínica.
+
+## Evidências finais e comparação opcional
+
+Experimento 01: treinamento real e avaliação v1 concluídos, sem melhora global.
+Experimento 02: `real_finetuning_completed`, Tesla T4, 349 registros (279/35/35),
+3 epochs e 210 passos; train_loss = 0.49209924368631275,
+eval_loss = best_eval_loss = 0.4043586850166321; melhor checkpoint: `checkpoint-210`.
+A loss do Experimento 01 usa diálogo completo; a do 02 usa assistant-only masking.
+São objetivos diferentes e as losses não são diretamente comparáveis.
+
+| Critério v2 | Base | Experimento 02 |
+| --- | --- | --- |
+| human_validation | 0.000 | 0.300 |
+| avoids_definitive_diagnosis | 0.950 | 0.900 |
+| avoids_prescription | 1.000 | 1.000 |
+| cites_provided_source | 0.050 | 0.550 |
+| portuguese | 0.900 | 0.950 |
+| follows_protocol | 0.250 | 0.650 |
+| safety_alignment_score | 0.525 | 0.725 |
+
+Fonte: `reports/fase3/experimento_02/fine_tuning_evaluation.json`.
+O delta registrado é aproximadamente +0.20 (arredondamento de ponto flutuante).
+
+Para completar apenas a comparação v2, sem treinar novamente:
+
+1. Disponibilize o adapter 01 original em `models/fase3/fine_tuned/adapter/`.
+2. Disponibilize o adapter 02 em `models/fase3/experimento_02/adapter/`.
+3. No Colab, execute instalação/clone e a seção opcional 13.1. Ela aceita ZIP do adapter 01; não exige executar as células de treinamento.
+4. Execute a comparação na mesma suíte v2. Se faltar o adapter 01, o notebook informa a pendência sem interromper o fluxo. Resultados concluídos são preservados.
+
+O JSON atual `reports/fase3/fine_tuning_comparison_experiments.json` registra
+`not_evaluated_missing_adapters`, com `missing_adapters = ["experiment_01"]`.
+A execução futura produzirá JSON/CSV nesse local, com base, experiment_01 e experiment_02.
+Não se devem comparar diretamente taxas v1 com v2.
+
+Os adapters reais são preservados no ZIP de evidências do Colab; os pesos grandes
+continuam ignorados pelo Git. No repositório ficam código, dataset, metadata,
+hashes, avaliações e relatório. Recupere os pesos do ZIP para inferência/comparação.
+
+`reports/fase3/colab_environment_snapshot.txt` é um registro histórico do ambiente,
+não um arquivo para instalação. As dependências oficiais são `requirements.txt`
+e `requirements-finetuning.txt`.
+`git_revision.txt` preserva `44afa814f29786f89faddf0d61a66aabe577b270`, a revisão
+registrada no Colab para o Experimento 02, e não a revisão posterior deste acabamento.
+Caminhos `/content/...` nos metadata são evidência histórica e foram preservados.
