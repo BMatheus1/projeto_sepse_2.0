@@ -23,7 +23,7 @@
     "templates_locais_triagem",
     "templates_locais_validacao_humana"
   ],
-  "generated_at": "2026-09-15T18:43:29.132417+00:00",
+  "generated_at": "2026-09-15T18:54:04.082158+00:00",
   "dataset_path": "D:\\projeto_sepse_2.0\\data\\fase3\\processed\\fine_tuning_dataset.jsonl",
   "seed": 42,
   "split_target": {
