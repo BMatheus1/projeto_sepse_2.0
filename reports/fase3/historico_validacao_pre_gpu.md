@@ -1,4 +1,19 @@
-# Implementação e validação local da Fase 3
+# Documento histórico — validação pré-GPU
+
+Este documento registra o estado intermediário do projeto antes da execução dos
+treinamentos reais em GPU. Ele é preservado apenas para rastreabilidade e histórico
+de desenvolvimento.
+
+Para o estado final da Fase 3, consultar:
+
+- `README.md`
+- `reports/fase3/relatorio_tecnico_fase3.md`
+- `models/fase3/experimento_02/training_metadata.json`
+- `reports/fase3/experimento_02/fine_tuning_evaluation.json`
+
+Não interpretar as pendências descritas abaixo como pendências atuais do projeto.
+
+## Implementação e validação local da Fase 3
 
 ## Resultado
 
@@ -50,7 +65,7 @@ Use o notebook `notebook/fase3_finetuning_colab.ipynb` para exportar o ZIP de ev
 - [notebook/fase3_finetuning_colab.ipynb](D:/projeto_sepse_2.0/notebook/fase3_finetuning_colab.ipynb)
 - [reports/fase3/fine_tuning_evaluation.csv](D:/projeto_sepse_2.0/reports/fase3/fine_tuning_evaluation.csv)
 - [reports/fase3/fine_tuning_evaluation.json](D:/projeto_sepse_2.0/reports/fase3/fine_tuning_evaluation.json)
-- [reports/fase3/implementacao_validacao_local.md](D:/projeto_sepse_2.0/reports/fase3/implementacao_validacao_local.md)
+- `reports/fase3/historico_validacao_pre_gpu.md`
 - [requirements-finetuning.txt](D:/projeto_sepse_2.0/requirements-finetuning.txt)
 - [src/tc_fase3/evaluate_finetuned_model.py](D:/projeto_sepse_2.0/src/tc_fase3/evaluate_finetuned_model.py)
 - [src/tc_fase3/fine_tuned_llm.py](D:/projeto_sepse_2.0/src/tc_fase3/fine_tuned_llm.py)

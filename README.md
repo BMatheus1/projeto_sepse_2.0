@@ -515,3 +515,21 @@ e `requirements-finetuning.txt`.
 `git_revision.txt` preserva `44afa814f29786f89faddf0d61a66aabe577b270`, a revisão
 registrada no Colab para o Experimento 02, e não a revisão posterior deste acabamento.
 Caminhos `/content/...` nos metadata são evidência histórica e foram preservados.
+
+## Autor
+
+**Matheus Brito da Silva**
+
+Projeto desenvolvido para fins acadêmicos e de portfólio.
+
+GitHub: [github.com/BMatheus1](https://github.com/BMatheus1)
+
+## Licença e direitos autorais
+
+Copyright © 2026 Matheus Brito da Silva. Todos os direitos reservados.
+
+Este repositório é público para fins de avaliação acadêmica, demonstração profissional
+e portfólio. A disponibilização pública não concede autorização para copiar,
+redistribuir, comercializar ou apresentar o trabalho como de autoria de terceiros.
+
+Consulte o arquivo [LICENSE](LICENSE).

@@ -1,5 +1,8 @@
 # Relatório Técnico - Tech Challenge Fase 3
 
+**Autor:** Matheus Brito da Silva
+**Ano:** 2026
+
 ## 1. Introdução
 
 A Fase 3 evolui o projeto de detecção de sepse da Fase 2 para um assistente médico acadêmico de apoio à triagem. A solução preserva a API FastAPI, o modelo otimizado, o Algoritmo Genético e os relatórios anteriores, adicionando uma camada modular para consulta a pacientes sintéticos, protocolos internos sintéticos, explicabilidade, segurança, logging e fluxo automatizado.

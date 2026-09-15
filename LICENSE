@@ -1,0 +1,52 @@
+LICENÇA PROPRIETÁRIA — TODOS OS DIREITOS RESERVADOS
+
+Copyright © 2026 Matheus Brito da Silva
+Todos os direitos reservados.
+
+Este software, incluindo seu código-fonte, documentação, notebooks, arquivos de
+configuração, relatórios, estruturas de dados sintéticos, artefatos acadêmicos e
+demais materiais originais deste repositório, é de autoria de Matheus Brito da
+Silva, ressalvados os componentes, bibliotecas, modelos, datasets e demais
+materiais de terceiros, que permanecem sujeitos aos direitos e às licenças de
+seus respectivos autores.
+
+A disponibilização pública deste repositório não concede licença automática de
+uso, cópia, redistribuição, sublicenciamento, comercialização ou criação e
+redistribuição de trabalhos derivados.
+
+É permitida a visualização e a análise do conteúdo para fins de avaliação
+acadêmica, demonstração profissional, recrutamento, portfólio e estudo pessoal.
+O uso parcial para referência, análise ou estudo deve respeitar a autoria, os
+limites aqui estabelecidos e a legislação aplicável.
+
+Sem autorização prévia e expressa por escrito do autor, é proibido:
+
+1. copiar ou reproduzir substancialmente o projeto ou seu código;
+2. redistribuir o projeto, o código, a documentação ou partes substanciais deles;
+3. apresentar o projeto, o código, a documentação, os datasets, os relatórios,
+   os notebooks ou os resultados, integral ou parcialmente, como trabalho de
+   outra pessoa;
+4. remover ou alterar avisos de autoria;
+5. criar trabalhos derivados para redistribuição;
+6. utilizar o material original do projeto para fins comerciais;
+7. sublicenciar, vender ou comercializar o conteúdo original deste repositório.
+
+Trechos utilizados para análise, referência ou citação acadêmica devem identificar
+adequadamente Matheus Brito da Silva como autor do material original correspondente.
+
+Contribuições de terceiros, se vierem a existir, não transferem automaticamente
+a titularidade do projeto original. Cada contribuição permanece sujeita aos
+termos aplicáveis e aos direitos de seus autores.
+
+Bibliotecas, frameworks, modelos, datasets e demais componentes de terceiros
+continuam sujeitos às suas próprias licenças e direitos. Esta licença não
+reivindica propriedade sobre Python, FastAPI, Hugging Face Transformers, Qwen,
+PEFT, LangChain, LangGraph, XGBoost, scikit-learn, PhysioNet ou qualquer outro
+material de terceiros.
+
+Este projeto possui finalidade acadêmica e de portfólio. Nenhuma parte relacionada
+à saúde deve ser interpretada como ferramenta clínica validada, diagnóstico,
+prescrição ou substituição de profissional habilitado.
+
+Para qualquer permissão adicional, é necessária autorização prévia e expressa,
+por escrito, de Matheus Brito da Silva.
